@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../models/customer.dart';
+
 class CustomerFormData {
   final String name;
   final String? phone;
@@ -17,15 +19,20 @@ class CustomerFormData {
 
 /// Keyboard-safe customer creation sheet shared by invoices and customers.
 class CustomerFormSheet extends StatefulWidget {
-  const CustomerFormSheet({super.key});
+  final Customer? customer;
 
-  static Future<CustomerFormData?> show(BuildContext context) {
+  const CustomerFormSheet({super.key, this.customer});
+
+  static Future<CustomerFormData?> show(
+    BuildContext context, {
+    Customer? customer,
+  }) {
     return showModalBottomSheet<CustomerFormData>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => const CustomerFormSheet(),
+      builder: (_) => CustomerFormSheet(customer: customer),
     );
   }
 
@@ -39,6 +46,20 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
   final _phone = TextEditingController();
   final _email = TextEditingController();
   final _address = TextEditingController();
+
+  bool get _isEditing => widget.customer != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final customer = widget.customer;
+    if (customer != null) {
+      _name.text = customer.name;
+      _phone.text = customer.phone ?? '';
+      _email.text = customer.email;
+      _address.text = customer.address ?? '';
+    }
+  }
 
   @override
   void dispose() {
@@ -74,7 +95,7 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'form.newCustomer'.tr,
+              (_isEditing ? 'form.editCustomer' : 'form.newCustomer').tr,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -137,7 +158,10 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
                 key: const Key('new-customer-save'),
                 onPressed: _submit,
                 icon: const Icon(Icons.person_add_alt_1),
-                label: Text('form.createCustomer'.tr),
+                label: Text(
+                  (_isEditing ? 'form.updateCustomer' : 'form.createCustomer')
+                      .tr,
+                ),
               ),
             ),
           ],

@@ -1,22 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../core/network/api_client.dart';
 import '../core/utils/currency_converter.dart';
 import '../models/currency.dart';
 import '../models/exchange_rate.dart';
 import '../services/currency_service.dart';
 import '../services/exchange_rate_service.dart';
+import '../services/firebase_service_exception.dart';
 
 class SettingsController extends GetxController {
-  static const _fallbackCurrency = Currency(
-    id: '1',
-    code: 'JOD',
-    name: 'Jordanian Dinar',
-    symbol: 'JOD',
-    isBaseCurrency: true,
-  );
-
   final _themeMode = ThemeMode.light.obs;
   final _locale = const Locale('en').obs;
   final _isLoading = false.obs;
@@ -33,26 +25,22 @@ class SettingsController extends GetxController {
   bool get isLoading => _isLoading.value;
   String? get errorMessage => _errorMessage.value;
 
-  /// The base currency is configured in the database
-  /// (exactly one currency has IsBaseCurrency = 1).
-  String get defaultCurrencyId {
-    for (final c in currencies) {
-      if (c.isBaseCurrency) return c.id;
-    }
-    return currencies.isEmpty ? _fallbackCurrency.id : currencies.first.id;
-  }
+  String get defaultCurrencyId => currencies.isEmpty
+      ? ''
+      : currencies.firstWhere(
+          (currency) => currency.isBaseCurrency,
+          orElse: () => currencies.first,
+        ).id;
 
-  Currency get defaultCurrency {
-    if (currencies.isEmpty) return _fallbackCurrency;
+  Currency? get defaultCurrency {
+    if (currencies.isEmpty) return null;
     return currencies.firstWhere(
-      (c) => c.id == defaultCurrencyId,
+      (currency) => currency.id == defaultCurrencyId,
       orElse: () => currencies.first,
     );
   }
 
-  void setThemeMode(ThemeMode mode) {
-    _themeMode.value = mode;
-  }
+  void setThemeMode(ThemeMode mode) => _themeMode.value = mode;
 
   void setLocale(Locale locale) {
     _locale.value = locale;
@@ -64,41 +52,35 @@ class SettingsController extends GetxController {
       await _currencyService.setBaseCurrency(id);
       await loadCurrenciesAndRates();
       return null;
-    } on ApiException catch (e) {
-      return e.message;
+    } on FirebaseServiceException catch (error) {
+      return error.message;
     } catch (_) {
       return 'Could not change the base currency. Please try again.';
     }
   }
 
-  Currency currencyById(String id) {
-    return currencies.firstWhere(
-      (c) => c.id == id,
-      orElse: () => _fallbackCurrency,
-    );
-  }
-
-  Currency? currencyByCode(String code) {
-    for (final c in currencies) {
-      if (c.code == code) return c;
+  Currency? currencyById(String id) {
+    for (final currency in currencies) {
+      if (currency.id == id) return currency;
     }
     return null;
   }
 
-  /// RateToBase of a currency: how much BASE currency equals 1 unit of it.
-  double rateFor(String currencyId) {
-    final baseId = defaultCurrencyId;
-    if (currencyId == baseId) return 1.0;
-    for (final rate in exchangeRates) {
-      if (rate.currencyId == currencyId) {
-        return rate.rateToBase;
-      }
+  Currency? currencyByCode(String code) {
+    for (final currency in currencies) {
+      if (currency.code == code) return currency;
     }
-    return 1.0;
+    return null;
   }
 
-  /// Universal conversion between any two currencies.
-  /// Converted = amount * sourceRateToBase / targetRateToBase.
+  double rateFor(String currencyId) {
+    if (currencyId == defaultCurrencyId) return 1;
+    for (final rate in exchangeRates) {
+      if (rate.currencyId == currencyId) return rate.rateToBase;
+    }
+    return 1;
+  }
+
   double convert(double amount, String fromCurrencyId, String toCurrencyId) {
     return CurrencyConverter.convert(
       amount,
@@ -109,9 +91,7 @@ class SettingsController extends GetxController {
 
   ExchangeRate? rateByCurrencyId(String currencyId) {
     for (final rate in exchangeRates) {
-      if (rate.currencyId == currencyId) {
-        return rate;
-      }
+      if (rate.currencyId == currencyId) return rate;
     }
     return null;
   }
@@ -124,8 +104,8 @@ class SettingsController extends GetxController {
       final rateList = await _exchangeRateService.getExchangeRates();
       currencies.value = currencyList;
       exchangeRates.value = rateList;
-    } on ApiException catch (e) {
-      _errorMessage.value = e.message;
+    } on FirebaseServiceException catch (error) {
+      _errorMessage.value = error.message;
     } catch (_) {
       _errorMessage.value = 'Could not load currencies. Please try again.';
     } finally {
@@ -138,8 +118,8 @@ class SettingsController extends GetxController {
       await _exchangeRateService.updateRate(rateId, newRate);
       await loadCurrenciesAndRates();
       return null;
-    } on ApiException catch (e) {
-      return e.message;
+    } on FirebaseServiceException catch (error) {
+      return error.message;
     } catch (_) {
       return 'Could not update the exchange rate. Please try again.';
     }

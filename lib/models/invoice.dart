@@ -1,7 +1,7 @@
+import '../core/utils/firestore_helpers.dart';
 import 'currency.dart';
 import 'customer.dart';
 import 'invoice_item.dart';
-import 'json_helpers.dart';
 
 enum InvoiceStatus { draft, approved, cancelled }
 
@@ -35,7 +35,6 @@ InvoiceStatus parseInvoiceStatus(String value) {
       return InvoiceStatus.approved;
     case 'cancelled':
       return InvoiceStatus.cancelled;
-    case 'draft':
     default:
       return InvoiceStatus.draft;
   }
@@ -44,23 +43,9 @@ InvoiceStatus parseInvoiceStatus(String value) {
 enum TaxMode { exclusive, inclusive }
 
 extension TaxModeX on TaxMode {
-  String get label {
-    switch (this) {
-      case TaxMode.exclusive:
-        return 'Tax Exclusive';
-      case TaxMode.inclusive:
-        return 'Tax Inclusive';
-    }
-  }
-
-  String get translationKey {
-    switch (this) {
-      case TaxMode.exclusive:
-        return 'details.taxExclusive';
-      case TaxMode.inclusive:
-        return 'details.taxInclusive';
-    }
-  }
+  String get translationKey => this == TaxMode.inclusive
+      ? 'details.taxInclusive'
+      : 'details.taxExclusive';
 }
 
 TaxMode parseTaxMode(String value) =>
@@ -105,66 +90,68 @@ class Invoice {
     this.cancelledAt,
   });
 
-  factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
-    id: toStr(json['id']),
-    invoiceNumber: toStr(json['invoiceNumber']),
-    invoiceName: toStr(json['invoiceName']),
-    isHidden: toBool(json['isHidden']),
-    customer: Customer(
-      id: toStr(json['customerId']),
-      name: toStr(json['customerName']),
-    ),
-    currency: Currency(
-      id: toStr(json['currencyId']),
-      code: toStr(json['currencyCode']),
-      name: toStr(json['currencyCode']),
-      symbol: toStr(json['currencyCode']),
-    ),
-    baseCurrencyCode: toStr(json['baseCurrencyCode']),
-    exchangeRate: toDouble(json['exchangeRate']),
-    taxMode: parseTaxMode(toStr(json['taxMode'])),
-    status: parseInvoiceStatus(toStr(json['status'])),
-    items:
-        (json['items'] as List?)
-            ?.map((e) => InvoiceItem.fromJson(e as Map<String, dynamic>))
+  factory Invoice.fromFirestore(String id, Map<String, dynamic> data) {
+    final items = (data['items'] as List?)
+            ?.whereType<Map>()
+            .indexed
+            .map(
+              (entry) => InvoiceItem.fromMap(
+                Map<String, dynamic>.from(entry.$2),
+                fallbackId: 'item-${entry.$1}',
+              ),
+            )
             .toList() ??
-        const [],
-    subtotal: toDouble(json['subtotal']),
-    taxAmount: toDouble(json['taxAmount']),
-    totalAmount: toDouble(json['totalAmount']),
-    createdAt: toDate(json['createdAt']),
-    approvedAt: toDateOrNull(json['approvedAt']),
-    cancelledAt: toDateOrNull(json['cancelledAt']),
-  );
+        const <InvoiceItem>[];
+    return Invoice(
+      id: id,
+      invoiceNumber: firestoreString(data['invoiceNumber']),
+      invoiceName: firestoreString(data['invoiceName']),
+      isHidden: firestoreBool(data['isHidden']),
+      customer: Customer(
+        id: firestoreString(data['customerId']),
+        name: firestoreString(data['customerName']),
+      ),
+      currency: Currency(
+        id: firestoreString(data['currencyId']),
+        code: firestoreString(data['currencyCode']),
+        name: firestoreString(data['currencyName']),
+        symbol: firestoreString(data['currencySymbol']),
+      ),
+      baseCurrencyCode: firestoreString(data['baseCurrencyCode']),
+      exchangeRate: firestoreDouble(data['exchangeRate']),
+      taxMode: parseTaxMode(firestoreString(data['taxMode'])),
+      status: parseInvoiceStatus(firestoreString(data['status'])),
+      items: items,
+      subtotal: firestoreDouble(data['subtotal']),
+      taxAmount: firestoreDouble(data['taxAmount']),
+      totalAmount: firestoreDouble(data['totalAmount']),
+      createdAt: requiredFirestoreDate(data['createdAt']),
+      approvedAt: firestoreDate(data['approvedAt']),
+      cancelledAt: firestoreDate(data['cancelledAt']),
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': int.tryParse(id) ?? id,
+  Map<String, dynamic> toFirestore() => {
     'invoiceNumber': invoiceNumber,
     'invoiceName': invoiceName,
     'isHidden': isHidden,
-    'customerId': int.tryParse(customer.id) ?? customer.id,
+    'customerId': customer.id,
     'customerName': customer.name,
-    'currencyId': int.tryParse(currency.id) ?? currency.id,
+    'currencyId': currency.id,
     'currencyCode': currency.code,
+    'currencyName': currency.name,
+    'currencySymbol': currency.symbol,
+    'baseCurrencyCode': baseCurrencyCode,
     'exchangeRate': exchangeRate,
     'taxMode': taxMode == TaxMode.inclusive ? 'Inclusive' : 'Exclusive',
     'status': status.label,
+    'items': items.map((item) => item.toFirestore()).toList(),
     'subtotal': subtotal,
     'taxAmount': taxAmount,
     'totalAmount': totalAmount,
-    'createdAt': createdAt.toIso8601String(),
-    'approvedAt': approvedAt?.toIso8601String(),
-    'cancelledAt': cancelledAt?.toIso8601String(),
-    'items': items.map((i) => i.toJson()).toList(),
-  };
-
-  Map<String, dynamic> toCreateRequest() => {
-    'customerId': int.tryParse(customer.id),
-    'currencyId': int.tryParse(currency.id),
-    'taxMode': taxMode == TaxMode.inclusive ? 'Inclusive' : 'Exclusive',
-    'invoiceName': invoiceName,
-    'invoiceDate': createdAt.toUtc().toIso8601String(),
-    'items': items.map((i) => i.toCreateRequest()).toList(),
+    'createdAt': createdAt,
+    'approvedAt': approvedAt,
+    'cancelledAt': cancelledAt,
   };
 
   bool get isEditable => status == InvoiceStatus.draft;
@@ -191,6 +178,7 @@ class Invoice {
       isHidden: isHidden ?? this.isHidden,
       customer: customer ?? this.customer,
       currency: currency ?? this.currency,
+      baseCurrencyCode: baseCurrencyCode,
       exchangeRate: exchangeRate ?? this.exchangeRate,
       taxMode: taxMode ?? this.taxMode,
       status: status ?? this.status,

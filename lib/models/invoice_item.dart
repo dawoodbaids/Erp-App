@@ -1,4 +1,4 @@
-import 'json_helpers.dart';
+import '../core/utils/firestore_helpers.dart';
 
 class InvoiceItem {
   final String id;
@@ -27,43 +27,39 @@ class InvoiceItem {
     required this.lineTotal,
   });
 
-  factory InvoiceItem.fromJson(Map<String, dynamic> json) => InvoiceItem(
-    id: toStr(json['id']),
-    productId: toStr(json['productId']),
-    productName: toStr(json['productName']),
-    barcode: toStr(json['barcode']),
-    originalUnitPrice: toDouble(
-      json['originalUnitPrice'] ?? json['unitPrice'],
-    ),
-    originalCurrencyId: toStr(json['originalCurrencyId']),
-    originalCurrencyCode: toStr(json['originalCurrencyCode']),
-    quantity: toDouble(json['quantity']),
-    unitPrice: toDouble(json['unitPrice']),
-    taxRate: toDouble(json['taxRate']),
-    lineTotal: toDouble(json['subtotal'] ?? json['lineTotal']),
-  );
+  factory InvoiceItem.fromMap(
+    Map<String, dynamic> data, {
+    String fallbackId = '',
+  }) {
+    return InvoiceItem(
+      id: firestoreString(data['id']).isEmpty
+          ? fallbackId
+          : firestoreString(data['id']),
+      productId: firestoreString(data['productId']),
+      productName: firestoreString(data['productName']),
+      barcode: firestoreString(data['barcode']),
+      originalUnitPrice: firestoreDouble(data['originalUnitPrice']),
+      originalCurrencyId: firestoreString(data['originalCurrencyId']),
+      originalCurrencyCode: firestoreString(data['originalCurrencyCode']),
+      quantity: firestoreDouble(data['quantity']),
+      unitPrice: firestoreDouble(data['unitPrice']),
+      taxRate: firestoreDouble(data['taxRate']),
+      lineTotal: firestoreDouble(data['lineTotal']),
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': int.tryParse(id) ?? id,
-    'productId': int.tryParse(productId) ?? productId,
+  Map<String, dynamic> toFirestore() => {
+    'id': id,
+    'productId': productId,
     'productName': productName,
     'barcode': barcode,
     'originalUnitPrice': originalUnitPrice,
-    'originalCurrencyId': int.tryParse(originalCurrencyId) ??
-        originalCurrencyId,
+    'originalCurrencyId': originalCurrencyId,
     'originalCurrencyCode': originalCurrencyCode,
     'quantity': quantity,
     'unitPrice': unitPrice,
     'taxRate': taxRate,
     'lineTotal': lineTotal,
-  };
-
-  /// The backend is the source of truth for pricing. It converts the product's
-  /// original price and copies the product tax rate, so the client only sends
-  /// the product reference and quantity.
-  Map<String, dynamic> toCreateRequest() => {
-    'productId': int.tryParse(productId),
-    'quantity': quantity,
   };
 
   InvoiceItem copyWith({

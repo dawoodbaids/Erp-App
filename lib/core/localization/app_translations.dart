@@ -45,9 +45,9 @@ class AppTranslations extends Translations {
     'login.subtitle': 'Sales Management',
     'login.heading': 'Welcome back',
     'login.message': 'Sign in to manage your business.',
-    'login.username': 'Username',
+    'login.username': 'Email',
     'login.password': 'Password',
-    'login.usernameRequired': 'Username is required',
+    'login.usernameRequired': 'Email is required',
     'login.passwordRequired': 'Password is required',
     'login.button': 'LOGIN',
     'login.signIn': 'Sign In',
@@ -55,7 +55,8 @@ class AppTranslations extends Translations {
     'login.hidePassword': 'Hide password',
     'login.failedTitle': 'Login failed',
     'login.failedDefault': 'Invalid username or password',
-    'login.hint': 'Mock credentials: admin / Admin@123',
+    'login.hint':
+        'Use the email and password configured in Firebase Authentication.',
 
     // Dashboard
     'dashboard.overview': 'Overview',
@@ -188,7 +189,9 @@ class AppTranslations extends Translations {
     'form.invoiceNameRequired': 'Invoice name is required',
     'form.invoiceNameHint': 'e.g. Office Equipment Purchase',
     'form.newCustomer': 'New Customer',
+    'form.editCustomer': 'Edit Customer',
     'form.createCustomer': 'Create Customer',
+    'form.updateCustomer': 'Update Customer',
     'form.customerNameRequired': 'Customer name is required',
     'form.customerCreateFailed': 'Could not create customer',
     'form.createProductFromBarcode':
@@ -218,6 +221,11 @@ class AppTranslations extends Translations {
     'products.priceLabel': 'Unit Price',
     'products.currency': 'Currency',
     'products.status': 'Status',
+    'products.deleteTitle': 'Delete product?',
+    'products.deleteMessage':
+        'This permanently removes the product from Firestore.',
+    'products.deleteFailed': 'Could not delete product',
+    'products.deleteSuccess': 'Product deleted',
 
     // Product form dialog
     'productForm.addTitle': 'Add Product',
@@ -233,6 +241,7 @@ class AppTranslations extends Translations {
     'productForm.taxRateInvalid': 'Enter a valid tax rate',
     'productForm.taxRateRange': 'Tax rate must be 0-100',
     'productForm.currency': 'Currency',
+    'productForm.currencyRequired': 'Currency is required',
     'productForm.selectImage': 'Select Image',
     'productForm.replaceImage': 'Replace Image',
     'productForm.removeImage': 'Remove image',
@@ -282,13 +291,22 @@ class AppTranslations extends Translations {
     'customers.overview': 'Overview',
     'customers.name': 'Customer Name',
     'customers.address': 'Address',
+    'customers.deleteTitle': 'Delete customer?',
+    'customers.deleteMessage':
+        'This permanently removes the customer from Firestore.',
+    'customers.deleteFailed': 'Could not delete customer',
+    'customers.deleteSuccess': 'Customer deleted',
 
     // Settings
     'settings.title': 'Settings',
     'settings.account': 'Account',
     'settings.security': 'Security',
     'settings.securitySubtitle': 'Change password and security settings',
-    'settings.securityNote': 'Password management is disabled in the demo.',
+    'settings.securityNote':
+        'Password management is handled by Firebase Authentication.',
+    'settings.noCurrenciesTitle': 'No currencies configured',
+    'settings.noCurrenciesMessage':
+        'Add active currencies in Firestore before creating products or invoices.',
     'settings.preferences': 'Preferences',
     'settings.defaultCurrency': 'Default Currency',
     'settings.defaultCurrencySubtitle': 'Used for dashboard and totals',
@@ -352,6 +370,9 @@ class AppTranslations extends Translations {
     'rates.save': 'Save',
     'rates.hint': '1 {from} → {to}',
     'rates.base': 'Base',
+    'rates.emptyTitle': 'No exchange rates configured',
+    'rates.emptyMessage':
+        'Add exchange rates in Firestore for non-base currencies.',
 
     // Language screen
     'language.title': 'Language',
@@ -436,9 +457,9 @@ class AppTranslations extends Translations {
     'login.subtitle': 'إدارة المبيعات',
     'login.heading': 'مرحباً بعودتك',
     'login.message': 'سجّل الدخول لإدارة أعمالك.',
-    'login.username': 'اسم المستخدم',
+    'login.username': 'البريد الإلكتروني',
     'login.password': 'كلمة المرور',
-    'login.usernameRequired': 'اسم المستخدم مطلوب',
+    'login.usernameRequired': 'البريد الإلكتروني مطلوب',
     'login.passwordRequired': 'كلمة المرور مطلوبة',
     'login.button': 'تسجيل الدخول',
     'login.signIn': 'تسجيل الدخول',
@@ -446,7 +467,8 @@ class AppTranslations extends Translations {
     'login.hidePassword': 'إخفاء كلمة المرور',
     'login.failedTitle': 'فشل تسجيل الدخول',
     'login.failedDefault': 'اسم المستخدم أو كلمة المرور غير صحيحة',
-    'login.hint': 'بيانات تجريبية: admin / Admin@123',
+    'login.hint':
+        'استخدم البريد الإلكتروني وكلمة المرور المضافين في مصادقة Firebase.',
 
     // Dashboard
     'dashboard.overview': 'نظرة عامة',
@@ -575,7 +597,9 @@ class AppTranslations extends Translations {
     'form.invoiceNameRequired': 'اسم الفاتورة مطلوب',
     'form.invoiceNameHint': 'مثال: شراء معدات مكتبية',
     'form.newCustomer': 'عميل جديد',
+    'form.editCustomer': 'تعديل العميل',
     'form.createCustomer': 'إنشاء عميل',
+    'form.updateCustomer': 'تحديث العميل',
     'form.customerNameRequired': 'اسم العميل مطلوب',
     'form.customerCreateFailed': 'تعذّر إنشاء العميل',
     'form.createProductFromBarcode':
@@ -604,6 +628,10 @@ class AppTranslations extends Translations {
     'products.priceLabel': 'سعر الوحدة',
     'products.currency': 'العملة',
     'products.status': 'الحالة',
+    'products.deleteTitle': 'حذف المنتج؟',
+    'products.deleteMessage': 'سيتم حذف المنتج نهائياً من قاعدة البيانات.',
+    'products.deleteFailed': 'تعذّر حذف المنتج',
+    'products.deleteSuccess': 'تم حذف المنتج',
 
     // Product form dialog
     'productForm.addTitle': 'إضافة منتج',
@@ -619,6 +647,7 @@ class AppTranslations extends Translations {
     'productForm.taxRateInvalid': 'أدخل نسبة ضريبة صحيحة',
     'productForm.taxRateRange': 'يجب أن تكون نسبة الضريبة بين 0-100',
     'productForm.currency': 'العملة',
+    'productForm.currencyRequired': 'العملة مطلوبة',
     'productForm.selectImage': 'اختيار صورة',
     'productForm.replaceImage': 'استبدال الصورة',
     'productForm.removeImage': 'إزالة الصورة',
@@ -667,13 +696,20 @@ class AppTranslations extends Translations {
     'customers.overview': 'نظرة عامة',
     'customers.name': 'اسم العميل',
     'customers.address': 'العنوان',
+    'customers.deleteTitle': 'حذف العميل؟',
+    'customers.deleteMessage': 'سيتم حذف العميل نهائياً من قاعدة البيانات.',
+    'customers.deleteFailed': 'تعذّر حذف العميل',
+    'customers.deleteSuccess': 'تم حذف العميل',
 
     // Settings
     'settings.title': 'الإعدادات',
     'settings.account': 'الحساب',
     'settings.security': 'الأمان',
     'settings.securitySubtitle': 'تغيير كلمة المرور وإعدادات الأمان',
-    'settings.securityNote': 'إدارة كلمة المرور معطّلة في النسخة التجريبية.',
+    'settings.securityNote': 'تتم إدارة كلمة المرور عبر مصادقة Firebase.',
+    'settings.noCurrenciesTitle': 'لا توجد عملات مهيأة',
+    'settings.noCurrenciesMessage':
+        'أضف عملات نشطة في Firestore قبل إنشاء المنتجات أو الفواتير.',
     'settings.preferences': 'التفضيلات',
     'settings.defaultCurrency': 'العملة الافتراضية',
     'settings.defaultCurrencySubtitle': 'تُستخدم في لوحة التحكم والإجماليات',
@@ -734,6 +770,8 @@ class AppTranslations extends Translations {
     'rates.save': 'حفظ',
     'rates.hint': '1 {from} → {to}',
     'rates.base': 'أساسية',
+    'rates.emptyTitle': 'لا توجد أسعار صرف مهيأة',
+    'rates.emptyMessage': 'أضف أسعار الصرف في Firestore للعملات غير الأساسية.',
 
     // Language screen
     'language.title': 'اللغة',

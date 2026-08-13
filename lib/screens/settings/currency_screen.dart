@@ -29,10 +29,18 @@ class CurrencyScreen extends StatelessWidget {
             );
           }
 
-          final baseId = controller.defaultCurrencyId;
-          final currencies = controller.currencies;
+           final baseId = controller.defaultCurrencyId;
+           final currencies = controller.currencies;
 
-          return RefreshIndicator(
+           if (currencies.isEmpty) {
+             return AppEmptyState(
+               icon: Icons.currency_exchange_outlined,
+               title: 'settings.noCurrenciesTitle'.tr,
+               message: 'settings.noCurrenciesMessage'.tr,
+             );
+           }
+
+           return RefreshIndicator(
             onRefresh: controller.loadCurrenciesAndRates,
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),

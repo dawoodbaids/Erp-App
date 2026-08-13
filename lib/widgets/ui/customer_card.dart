@@ -97,7 +97,7 @@ class CustomerCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              '${Formatters.amount(stats.total)} ${currency.code}',
+                              '${Formatters.amount(stats.total)} ${currency?.code ?? ''}',
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.w700,

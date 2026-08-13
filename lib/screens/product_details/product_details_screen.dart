@@ -6,19 +6,58 @@ import '../../controllers/settings_controller.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/product_image.dart';
 import '../../models/product.dart';
+import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/product_form_dialog.dart';
 import '../../widgets/ui/app_appbar.dart';
 import '../../widgets/ui/app_card.dart';
 import '../../widgets/ui/app_info.dart';
+import '../../widgets/ui/app_loading.dart';
 import '../../widgets/ui/app_states.dart';
 
-class ProductDetailsScreen extends StatelessWidget {
+class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({super.key});
+
+  @override
+  State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
+}
+
+class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.find<ProductController>().loadDetails(_productId);
+    });
+  }
 
   String get _productId => Get.arguments as String;
 
   Future<void> _edit(BuildContext context, Product product) async {
     await ProductFormDialog.show(context, product: product);
+  }
+
+  Future<void> _delete(
+    BuildContext context,
+    ProductController controller,
+  ) async {
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: 'products.deleteTitle'.tr,
+      message: 'products.deleteMessage'.tr,
+      confirmText: 'common.delete'.tr,
+      destructive: true,
+      confirmIcon: Icons.delete_outline,
+    );
+    if (confirmed != true) return;
+
+    final error = await controller.deleteProduct(_productId);
+    if (error != null) {
+      Get.snackbar('products.deleteFailed'.tr, error);
+      return;
+    }
+    if (!mounted) return;
+    Get.back();
+    Get.snackbar('products.deleteSuccess'.tr, 'common.success'.tr);
   }
 
   @override
@@ -31,10 +70,31 @@ class ProductDetailsScreen extends StatelessWidget {
             builder: (controller) {
               final product = controller.byId(_productId);
               if (product == null) return const SizedBox.shrink();
-              return IconButton(
-                tooltip: 'common.edit'.tr,
-                onPressed: () => _edit(context, product),
-                icon: const Icon(Icons.edit_outlined),
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'common.edit'.tr,
+                    onPressed: () => _edit(context, product),
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: 'common.delete'.tr,
+                    onSelected: (value) {
+                      if (value == 'delete') _delete(context, controller);
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.delete_outline),
+                          title: Text('common.delete'.tr),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               );
             },
           ),
@@ -44,9 +104,11 @@ class ProductDetailsScreen extends StatelessWidget {
         builder: (controller) {
           final product = controller.byId(_productId);
           if (product == null) {
+            if (controller.isLoading) return const AppLoadingState();
             return AppErrorState(
               title: 'products.errorTitle'.tr,
-              message: 'products.emptySearchMessage'.tr,
+              message:
+                  controller.errorMessage ?? 'products.emptySearchMessage'.tr,
               onRetry: controller.refresh,
             );
           }
@@ -83,7 +145,7 @@ class ProductDetailsScreen extends StatelessWidget {
                     ),
                     AppInfoRow(
                       label: 'products.currency'.tr,
-                      value: currency.code,
+                      value: currency?.code ?? '',
                       icon: Icons.currency_exchange_rounded,
                     ),
                     AppInfoRow(

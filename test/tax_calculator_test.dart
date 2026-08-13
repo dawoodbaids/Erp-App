@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:erp_mobileapp_ui/core/constants/mock_data.dart';
 import 'package:erp_mobileapp_ui/core/utils/tax_calculator.dart';
+import 'package:erp_mobileapp_ui/models/currency.dart';
+import 'package:erp_mobileapp_ui/models/customer.dart';
 import 'package:erp_mobileapp_ui/models/invoice.dart';
 import 'package:erp_mobileapp_ui/models/invoice_item.dart';
 import 'package:erp_mobileapp_ui/models/product.dart';
@@ -34,12 +35,12 @@ void main() {
 
     test('product tax rate feeds the invoice item', () {
       const product = Product(
-        id: 'P1',
-        name: 'Wireless Mouse',
-        barcode: '629100000002',
+        id: 'product-1',
+        name: 'Test Product',
+        barcode: '123456',
         price: 10,
         taxRate: 16,
-        currencyId: 'cur-jod',
+        currencyId: 'currency-1',
       );
       final item = InvoiceItem(
         id: 'i1',
@@ -71,36 +72,29 @@ void main() {
 
   group('Editability rule', () {
     test('only drafts are editable', () {
-      final draft = MockData.invoices.firstWhere(
-        (i) => i.status == InvoiceStatus.draft,
+      Invoice invoice(InvoiceStatus status) => Invoice(
+        id: 'invoice-${status.name}',
+        invoiceNumber: 'INV-${status.name}',
+        customer: const Customer(id: 'customer-1', name: 'Test Customer'),
+        currency: const Currency(
+          id: 'currency-1',
+          code: 'TST',
+          name: 'Test Currency',
+          symbol: 'TST',
+        ),
+        exchangeRate: 1,
+        taxMode: TaxMode.exclusive,
+        status: status,
+        items: const [],
+        subtotal: 0,
+        taxAmount: 0,
+        totalAmount: 0,
+        createdAt: DateTime(2025),
       );
-      final approved = MockData.invoices.firstWhere(
-        (i) => i.status == InvoiceStatus.approved,
-      );
-      final cancelled = MockData.invoices.firstWhere(
-        (i) => i.status == InvoiceStatus.cancelled,
-      );
 
-      expect(draft.isEditable, isTrue);
-      expect(approved.isEditable, isFalse);
-      expect(cancelled.isEditable, isFalse);
-    });
-  });
-
-  group('Mock data', () {
-    test('contains the five required invoice statuses', () {
-      final statuses = MockData.invoices.map((i) => i.status).toSet();
-
-      expect(statuses, contains(InvoiceStatus.draft));
-      expect(statuses, contains(InvoiceStatus.approved));
-      expect(statuses, contains(InvoiceStatus.cancelled));
-      expect(MockData.invoices.length, greaterThanOrEqualTo(5));
-    });
-
-    test('every product carries its own tax rate', () {
-      for (final product in MockData.products) {
-        expect(product.taxRate, greaterThan(0));
-      }
+      expect(invoice(InvoiceStatus.draft).isEditable, isTrue);
+      expect(invoice(InvoiceStatus.approved).isEditable, isFalse);
+      expect(invoice(InvoiceStatus.cancelled).isEditable, isFalse);
     });
   });
 }

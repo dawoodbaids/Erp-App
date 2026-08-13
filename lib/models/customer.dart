@@ -1,4 +1,4 @@
-import 'json_helpers.dart';
+import '../core/utils/firestore_helpers.dart';
 
 class Customer {
   final String id;
@@ -19,31 +19,26 @@ class Customer {
     this.createdAt,
   });
 
-  factory Customer.fromJson(Map<String, dynamic> json) => Customer(
-    id: toStr(json['id']),
-    name: toStr(json['name']),
-    phone: toStrOrNull(json['phone']),
-    email: toStr(json['email']),
-    address: toStrOrNull(json['address']),
-    isActive: toBool(json['isActive']),
-    createdAt: toDateOrNull(json['createdAt']),
-  );
+  factory Customer.fromFirestore(String id, Map<String, dynamic> data) {
+    return Customer(
+      id: id,
+      name: firestoreString(data['name']),
+      phone: firestoreStringOrNull(data['phone']),
+      email: firestoreString(data['email']),
+      address: firestoreStringOrNull(data['address']),
+      isActive: data.containsKey('isActive')
+          ? firestoreBool(data['isActive'])
+          : true,
+      createdAt: firestoreDate(data['createdAt']),
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': int.tryParse(id) ?? id,
+  Map<String, dynamic> toFirestore() => {
     'name': name,
     'phone': phone,
     'email': email,
     'address': address,
     'isActive': isActive,
-    'createdAt': createdAt?.toIso8601String(),
-  };
-
-  Map<String, dynamic> toCreateRequest() => {
-    'name': name,
-    'phone': phone,
-    'email': email,
-    'address': address,
   };
 
   Customer copyWith({

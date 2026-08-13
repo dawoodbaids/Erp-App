@@ -33,7 +33,7 @@ class ExchangeRatesScreen extends StatelessWidget {
       final currency = controller.currencyById(rate.currencyId);
       AppSnack.success(
         'rates.updatedMessage'.trParams({
-          'currency': currency.code,
+          'currency': currency?.code ?? rate.currencyId,
           'rate': Formatters.rate(result),
         }),
         title: 'rates.updatedTitle'.tr,
@@ -62,6 +62,20 @@ class ExchangeRatesScreen extends StatelessWidget {
           }
 
           final base = controller.defaultCurrency;
+          if (base == null) {
+            return AppEmptyState(
+              icon: Icons.currency_exchange_outlined,
+              title: 'settings.noCurrenciesTitle'.tr,
+              message: 'settings.noCurrenciesMessage'.tr,
+            );
+          }
+          if (controller.exchangeRates.isEmpty) {
+            return AppEmptyState(
+              icon: Icons.swap_horiz_rounded,
+              title: 'rates.emptyTitle'.tr,
+              message: 'rates.emptyMessage'.tr,
+            );
+          }
 
           return RefreshIndicator(
             onRefresh: controller.loadCurrenciesAndRates,
@@ -144,7 +158,7 @@ class _RateRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(11),
             ),
             child: Text(
-              currency.symbol,
+               currency?.symbol ?? rate.currencyId,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -156,7 +170,7 @@ class _RateRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  currency.name,
+                   currency?.name ?? rate.currencyId,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -166,7 +180,7 @@ class _RateRow extends StatelessWidget {
                   isBase
                       ? 'rates.base'.tr
                       : 'rates.hint'.trParams({
-                          'from': currency.code,
+                           'from': currency?.code ?? rate.currencyId,
                           'to': baseCode,
                         }),
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -236,8 +250,8 @@ class _ExchangeRateDialogState extends State<_ExchangeRateDialog> {
         children: [
           Text(
             'rates.hint'.trParams({
-              'from': currency.code,
-              'to': settings.defaultCurrency.code,
+               'from': currency?.code ?? widget.rate.currencyId,
+               'to': settings.defaultCurrency?.code ?? '',
             }),
             style: Theme.of(context).textTheme.bodyMedium,
           ),

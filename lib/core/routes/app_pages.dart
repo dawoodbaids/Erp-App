@@ -12,36 +12,66 @@ import '../../screens/settings/exchange_rates_screen.dart';
 import '../../screens/settings/language_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/shell/shell_screen.dart';
+import 'auth_middleware.dart';
 import 'app_routes.dart';
 
 class AppPages {
   static final List<GetPage> pages = [
     GetPage(name: AppRoutes.login, page: () => const LoginScreen()),
-    GetPage(name: AppRoutes.shell, page: () => const ShellScreen()),
-    GetPage(name: AppRoutes.invoiceList, page: () => const InvoiceListScreen()),
-    GetPage(name: AppRoutes.invoiceForm, page: () => const InvoiceFormScreen()),
+    GetPage(
+      name: AppRoutes.shell,
+      page: () => const ShellScreen(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: AppRoutes.invoiceList,
+      page: () => const InvoiceListScreen(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: AppRoutes.invoiceForm,
+      page: () => const InvoiceFormScreen(),
+      middlewares: [AuthMiddleware()],
+    ),
     GetPage(
       name: AppRoutes.invoiceDetails,
       page: () => const InvoiceDetailsScreen(),
+      middlewares: [AuthMiddleware()],
     ),
     GetPage(
       name: AppRoutes.findInvoice,
       page: () => const FindInvoiceScreen(),
+      middlewares: [AuthMiddleware()],
     ),
-    GetPage(name: AppRoutes.settings, page: () => const SettingsScreen()),
+    GetPage(
+      name: AppRoutes.settings,
+      page: () => const SettingsScreen(),
+      middlewares: [AuthMiddleware()],
+    ),
     GetPage(
       name: AppRoutes.customerDetails,
       page: () => const CustomerDetailsScreen(),
+      middlewares: [AuthMiddleware()],
     ),
     GetPage(
       name: AppRoutes.productDetails,
       page: () => const ProductDetailsScreen(),
+      middlewares: [AuthMiddleware()],
     ),
-    GetPage(name: AppRoutes.currencies, page: () => const CurrencyScreen()),
+    GetPage(
+      name: AppRoutes.currencies,
+      page: () => const CurrencyScreen(),
+      middlewares: [AuthMiddleware()],
+    ),
     GetPage(
       name: AppRoutes.exchangeRates,
       page: () => const ExchangeRatesScreen(),
+      middlewares: [AuthMiddleware()],
     ),
-    GetPage(name: AppRoutes.language, page: () => const LanguageScreen()),
+    GetPage(
+      name: AppRoutes.language,
+      page: () => const LanguageScreen(),
+      middlewares: [AuthMiddleware()],
+    ),
   ];
 }

@@ -112,7 +112,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
               title: Text('productForm.camera'.tr),
               onTap: () => Navigator.of(context).pop(ImageSource.camera),
             ),
-            if (_pickedImagePath != null)
+            if (_pickedImagePath != null || _image != null)
               ListTile(
                 leading: Icon(
                   Icons.delete_outline,
@@ -120,7 +120,10 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                 ),
                 title: Text('productForm.removeImage'.tr),
                 onTap: () {
-                  setState(() => _pickedImagePath = null);
+                  setState(() {
+                    _pickedImagePath = null;
+                    _image = null;
+                  });
                   Navigator.of(context).pop();
                 },
               ),
@@ -139,7 +142,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       if (picked != null && mounted) {
         setState(() {
           _pickedImagePath = picked.path;
-          _image = null;
         });
       }
     } catch (_) {
@@ -204,19 +206,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
         result.error ?? 'error.title'.tr,
       );
       return;
-    }
-
-    if (_pickedImagePath != null) {
-      final imageError = await controller.uploadImage(
-        result.product!.id,
-        _pickedImagePath!,
-      );
-      if (!mounted) return;
-      if (imageError != null) {
-        setState(() => _saving = false);
-        Get.snackbar('productForm.imageFailed'.tr, imageError);
-        return;
-      }
     }
 
     Navigator.of(context).pop(true);
@@ -323,6 +312,8 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                 key: ValueKey('currency-$_currencyId'),
                 initialValue: settings.currencyById(_currencyId),
                 isExpanded: true,
+                validator: (value) =>
+                    value == null ? 'productForm.currencyRequired'.tr : null,
                 decoration: InputDecoration(
                   labelText: 'productForm.currency'.tr,
                   prefixIcon: const Icon(Icons.currency_exchange),

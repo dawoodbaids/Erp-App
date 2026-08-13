@@ -197,7 +197,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _usernameController,
                                 validator: _validateUsername,
                                 textInputAction: TextInputAction.next,
-                                autofillHints: const [AutofillHints.username],
+                                keyboardType: TextInputType.emailAddress,
+                                autofillHints: const [AutofillHints.email],
                                 decoration: InputDecoration(
                                   labelText: 'login.username'.tr,
                                   prefixIcon: const Icon(Icons.person_outline),

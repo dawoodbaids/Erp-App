@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
-import '../network/api_config.dart';
 
 Widget buildProductImage(
   String? image, {
@@ -29,29 +28,13 @@ Widget buildProductImage(
     ),
   );
 
-  if (image == null || image.isEmpty) {
+  if (image == null || image.isEmpty || !image.startsWith('http')) {
     return placeholder;
-  }
-
-  if (image.startsWith('http') || image.startsWith('/')) {
-    final imageUrl = image.startsWith('/')
-        ? '${ApiConfig.baseUrl}$image'
-        : image;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Image.network(
-        imageUrl,
-        width: size,
-        height: size,
-        fit: fit,
-        errorBuilder: (_, __, ___) => placeholder,
-      ),
-    );
   }
 
   return ClipRRect(
     borderRadius: BorderRadius.circular(AppRadius.sm),
-    child: Image.asset(
+    child: Image.network(
       image,
       width: size,
       height: size,

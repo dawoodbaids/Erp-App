@@ -22,8 +22,9 @@ class Formatters {
     return rounded.toStringAsFixed(3);
   }
 
-  static String amountWithCurrency(Currency currency, double value) {
-    return '${currency.code} ${amount(value)}';
+  static String amountWithCurrency(Currency? currency, double value) {
+    final code = currency?.code ?? '';
+    return code.isEmpty ? amount(value) : '$code ${amount(value)}';
   }
 
   static String quantity(double value) {

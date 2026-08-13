@@ -38,7 +38,7 @@ class _ShellScreenState extends State<ShellScreen> {
   Widget build(BuildContext context) {
     return GetX<ShellController>(
       builder: (controller) {
-        final selectedIndex = controller.tabIndex.clamp(0, 4);
+        final selectedIndex = controller.tabIndex.clamp(0, 4).toInt();
         _tabFor(selectedIndex);
         return Scaffold(
           body: IndexedStack(

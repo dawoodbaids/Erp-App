@@ -1,8 +1,9 @@
 import 'package:get/get.dart';
 
-import '../core/network/api_client.dart';
 import '../models/product.dart';
+import '../services/firebase_service_exception.dart';
 import '../services/product_service.dart';
+import 'dashboard_controller.dart';
 
 /// Result of a product create/update. [product] is set on success,
 /// [error] carries a user-facing message on failure.
@@ -55,22 +56,24 @@ class ProductController extends GetxController {
     return null;
   }
 
-  /// Persists a new product on the backend and prepends it to the list.
-  /// Returns an error message, or null on success. On success the returned
-  /// value is the freshly created product (including its backend id).
+  /// Creates a product in Firestore and updates the visible list.
   Future<ProductResult> createProduct(Product draft) async {
     try {
       final created = await _productService.createProduct(draft);
       products.insert(0, created);
+      await _refreshDashboard();
       return ProductResult(created);
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       return ProductResult(null, e.message);
     } catch (_) {
-      return ProductResult(null, 'Could not create the product. Please try again.');
+      return ProductResult(
+        null,
+        'Could not create the product. Please try again.',
+      );
     }
   }
 
-  /// Persists product edits on the backend and updates the list.
+  /// Updates the Firestore product and the visible list.
   Future<ProductResult> updateProduct(Product product) async {
     try {
       final updated = await _productService.updateProduct(product);
@@ -80,29 +83,58 @@ class ProductController extends GetxController {
       } else {
         products.insert(0, updated);
       }
+      await _refreshDashboard();
       return ProductResult(updated);
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       return ProductResult(null, e.message);
     } catch (_) {
-      return ProductResult(null, 'Could not save the product. Please try again.');
+      return ProductResult(
+        null,
+        'Could not save the product. Please try again.',
+      );
     }
   }
 
-  /// Uploads a local image for the product and updates its [Product.image].
-  /// Returns an error message, or null on success.
-  Future<String?> uploadImage(String id, String filePath) async {
+  Future<String?> deleteProduct(String id) async {
     try {
-      final imageUrl = await _productService.uploadImage(id, filePath);
-      if (imageUrl == null) return null;
-      final index = products.indexWhere((p) => p.id == id);
-      if (index >= 0) {
-        products[index] = products[index].copyWith(image: imageUrl);
-      }
+      await _productService.deleteProduct(id);
+      products.removeWhere((product) => product.id == id);
+      await _refreshDashboard();
       return null;
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       return e.message;
     } catch (_) {
-      return 'Could not upload the image. Please try again.';
+      return 'Could not delete the product. Please try again.';
+    }
+  }
+
+  Future<Product?> loadDetails(String id) async {
+    if (isLoading) return byId(id);
+    _isLoading.value = true;
+    _errorMessage.value = null;
+    try {
+      final product = await _productService.getProduct(id);
+      final index = products.indexWhere((item) => item.id == id);
+      if (index >= 0) {
+        products[index] = product;
+      } else {
+        products.insert(0, product);
+      }
+      return product;
+    } on FirebaseServiceException catch (e) {
+      _errorMessage.value = e.message;
+      return byId(id);
+    } catch (_) {
+      _errorMessage.value = 'Could not load the product. Please try again.';
+      return byId(id);
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> _refreshDashboard() async {
+    if (Get.isRegistered<DashboardController>()) {
+      await Get.find<DashboardController>().refresh();
     }
   }
 
@@ -112,7 +144,7 @@ class ProductController extends GetxController {
     _errorMessage.value = null;
     try {
       products.value = await _productService.getProducts();
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       _errorMessage.value = e.message;
     } catch (_) {
       _errorMessage.value = 'Could not load products. Please try again.';

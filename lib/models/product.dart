@@ -1,4 +1,4 @@
-import 'json_helpers.dart';
+import '../core/utils/firestore_helpers.dart';
 
 class Product {
   static const Object _unset = Object();
@@ -23,35 +23,28 @@ class Product {
     this.isActive = true,
   });
 
-  factory Product.fromJson(Map<String, dynamic> json) => Product(
-    id: toStr(json['id']),
-    name: toStr(json['name']),
-    barcode: toStr(json['barcode']),
-    image: toStrOrNull(json['imageUrl'] ?? json['image']),
-    price: toDouble(json['price']),
-    taxRate: toDouble(json['taxRate']),
-    currencyId: toStr(json['currencyId']),
-    isActive: toBool(json['isActive']),
-  );
+  factory Product.fromFirestore(String id, Map<String, dynamic> data) {
+    return Product(
+      id: id,
+      name: firestoreString(data['name']),
+      barcode: firestoreString(data['barcode']),
+      image: firestoreStringOrNull(data['imageUrl']),
+      price: firestoreDouble(data['price']),
+      taxRate: firestoreDouble(data['taxRate']),
+      currencyId: firestoreString(data['currencyId']),
+      isActive: data.containsKey('isActive')
+          ? firestoreBool(data['isActive'])
+          : true,
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': int.tryParse(id) ?? id,
+  Map<String, dynamic> toFirestore() => {
     'name': name,
     'barcode': barcode,
-    'image': image,
     'imageUrl': image,
     'price': price,
     'taxRate': taxRate,
-    'currencyId': int.tryParse(currencyId) ?? currencyId,
-    'isActive': isActive,
-  };
-
-  Map<String, dynamic> toCreateRequest() => {
-    'name': name,
-    'barcode': barcode,
-    'price': price,
-    'taxRate': taxRate,
-    'currencyId': int.tryParse(currencyId) ?? currencyId,
+    'currencyId': currencyId,
     'isActive': isActive,
   };
 

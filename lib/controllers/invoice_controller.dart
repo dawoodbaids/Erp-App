@@ -1,9 +1,10 @@
 import 'package:get/get.dart';
 
-import '../core/network/api_client.dart';
 import '../models/invoice.dart';
 import '../models/product.dart';
+import '../services/firebase_service_exception.dart';
 import '../services/invoice_service.dart';
+import 'dashboard_controller.dart';
 import 'product_controller.dart';
 
 class InvoiceController extends GetxController {
@@ -76,8 +77,9 @@ class InvoiceController extends GetxController {
       final updated = await _invoiceService.approve(id);
       _replaceInvoice(updated);
       await refresh();
+      await _refreshDashboard();
       return null;
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       return e.message;
     } catch (_) {
       return 'Could not approve the invoice. Please try again.';
@@ -89,8 +91,9 @@ class InvoiceController extends GetxController {
       final updated = await _invoiceService.cancel(id);
       _replaceInvoice(updated);
       await refresh();
+      await _refreshDashboard();
       return null;
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       return e.message;
     } catch (_) {
       return 'Could not cancel the invoice. Please try again.';
@@ -104,8 +107,9 @@ class InvoiceController extends GetxController {
       final updated = await _invoiceService.hide(id);
       _replaceInvoice(updated);
       await refresh();
+      await _refreshDashboard();
       return null;
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       return e.message;
     } catch (_) {
       return 'Could not remove the invoice. Please try again.';
@@ -119,7 +123,7 @@ class InvoiceController extends GetxController {
       final invoice = await _invoiceService.findByNumber(number);
       _replaceInvoice(invoice);
       return (invoice, null);
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       return (null, e.message);
     } catch (_) {
       return (null, 'Could not search for the invoice. Please try again.');
@@ -141,7 +145,7 @@ class InvoiceController extends GetxController {
     _errorMessage.value = null;
     try {
       invoices.value = await _invoiceService.getInvoices();
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       _errorMessage.value = e.message;
     } catch (_) {
       _errorMessage.value = 'Could not load invoices. Please try again.';
@@ -162,7 +166,7 @@ class InvoiceController extends GetxController {
         invoices.insert(0, full);
       }
       return full;
-    } on ApiException {
+    } on FirebaseServiceException {
       return byId(id);
     } catch (_) {
       return byId(id);
@@ -179,6 +183,12 @@ class InvoiceController extends GetxController {
       return item.copyWith(barcode: product.barcode);
     }).toList();
     return invoice.copyWith(items: items);
+  }
+
+  Future<void> _refreshDashboard() async {
+    if (Get.isRegistered<DashboardController>()) {
+      await Get.find<DashboardController>().refresh();
+    }
   }
 
   Product? _productById(List<Product> products, String id) {

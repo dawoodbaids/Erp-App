@@ -72,10 +72,7 @@ class ProductCard extends StatelessWidget {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          Formatters.amountWithCurrency(
-                            currency,
-                            product.price,
-                          ),
+                           Formatters.amountWithCurrency(currency, product.price),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w800,

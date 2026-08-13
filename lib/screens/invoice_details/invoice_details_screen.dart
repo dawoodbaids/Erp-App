@@ -16,7 +16,7 @@ import '../../widgets/ui/app_appbar.dart';
 import '../../widgets/ui/app_card.dart';
 import '../../widgets/ui/app_loading.dart';
 import '../../widgets/ui/app_states.dart';
-
+//must be cleaned up and refactored to be more readable and maintainable
 class InvoiceDetailsScreen extends StatefulWidget {
   const InvoiceDetailsScreen({super.key});
 

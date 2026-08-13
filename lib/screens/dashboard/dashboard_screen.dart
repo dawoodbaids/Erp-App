@@ -21,6 +21,7 @@ import '../../widgets/ui/invoice_card.dart';
 import '../../widgets/ui/stat_card.dart';
 import '../../widgets/charts/app_charts.dart';
 
+//dashboad code must be more clean
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 

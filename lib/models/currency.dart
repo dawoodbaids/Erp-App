@@ -1,4 +1,4 @@
-import 'json_helpers.dart';
+import '../core/utils/firestore_helpers.dart';
 
 class Currency {
   final String id;
@@ -17,17 +17,20 @@ class Currency {
     this.isActive = true,
   });
 
-  factory Currency.fromJson(Map<String, dynamic> json) => Currency(
-    id: toStr(json['id']),
-    code: toStr(json['code']),
-    name: toStr(json['name']),
-    symbol: toStr(json['symbol']),
-    isBaseCurrency: toBool(json['isBaseCurrency']),
-    isActive: toBool(json['isActive']),
-  );
+  factory Currency.fromFirestore(String id, Map<String, dynamic> data) {
+    return Currency(
+      id: id,
+      code: firestoreString(data['code']),
+      name: firestoreString(data['name']),
+      symbol: firestoreString(data['symbol']),
+      isBaseCurrency: firestoreBool(data['isBaseCurrency']),
+      isActive: data.containsKey('isActive')
+          ? firestoreBool(data['isActive'])
+          : true,
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': int.tryParse(id) ?? id,
+  Map<String, dynamic> toFirestore() => {
     'code': code,
     'name': name,
     'symbol': symbol,

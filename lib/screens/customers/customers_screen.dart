@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/customer_controller.dart';
 import '../../controllers/invoice_controller.dart';
+import '../../controllers/settings_controller.dart';
 import '../../core/routes/app_routes.dart';
 import '../../models/customer.dart';
 import '../../models/invoice.dart';
@@ -145,12 +146,19 @@ class _CustomersScreenState extends State<CustomersScreen> {
     Customer customer,
   ) {
     final list = controller.invoices
-        .where((i) => i.customer.id == customer.id)
+        .where((i) => !i.isHidden && i.customer.id == customer.id)
         .toList();
+    final settings = Get.find<SettingsController>();
     final total = list.fold<double>(
       0,
-      (sum, i) =>
-          i.status == InvoiceStatus.approved ? sum + i.totalAmount : sum,
+      (sum, i) => i.status == InvoiceStatus.approved
+          ? sum +
+                settings.convert(
+                  i.totalAmount,
+                  i.currency.id,
+                  settings.defaultCurrencyId,
+                )
+          : sum,
     );
     return (count: list.length, total: total);
   }

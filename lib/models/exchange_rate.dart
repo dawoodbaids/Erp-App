@@ -1,8 +1,5 @@
-import 'json_helpers.dart';
+import '../core/utils/firestore_helpers.dart';
 
-/// Exchange rate of a currency relative to the system BASE currency.
-/// rateToBase = how much BASE currency equals 1 unit of this currency.
-/// Example: USD with rateToBase 0.709 against a JOD base means 1 USD = 0.709 JOD.
 class ExchangeRate {
   final String id;
   final String currencyId;
@@ -16,26 +13,27 @@ class ExchangeRate {
     this.effectiveDate,
   });
 
-  factory ExchangeRate.fromJson(Map<String, dynamic> json) => ExchangeRate(
-    id: toStr(json['id']),
-    currencyId: toStr(json['currencyId']),
-    rateToBase: toDouble(json['rateToBase']),
-    effectiveDate: toDateOrNull(json['effectiveDate']),
-  );
+  factory ExchangeRate.fromFirestore(String id, Map<String, dynamic> data) {
+    return ExchangeRate(
+      id: id,
+      currencyId: firestoreString(data['currencyId']),
+      rateToBase: firestoreDouble(data['rateToBase']),
+      effectiveDate: firestoreDate(data['effectiveDate']),
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': int.tryParse(id) ?? id,
-    'currencyId': int.tryParse(currencyId) ?? currencyId,
+  Map<String, dynamic> toFirestore() => {
+    'currencyId': currencyId,
     'rateToBase': rateToBase,
-    'effectiveDate': effectiveDate?.toIso8601String(),
+    'effectiveDate': effectiveDate,
   };
 
-  ExchangeRate copyWith({double? rateToBase}) {
+  ExchangeRate copyWith({double? rateToBase, DateTime? effectiveDate}) {
     return ExchangeRate(
       id: id,
       currencyId: currencyId,
       rateToBase: rateToBase ?? this.rateToBase,
-      effectiveDate: effectiveDate,
+      effectiveDate: effectiveDate ?? this.effectiveDate,
     );
   }
 }

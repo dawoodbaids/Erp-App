@@ -8,44 +8,150 @@ import '../../core/routes/app_routes.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/customer.dart';
 import '../../models/invoice.dart';
+import '../../widgets/customer_form_sheet.dart';
+import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/ui/app_card.dart';
 import '../../widgets/ui/app_appbar.dart';
+import '../../widgets/ui/app_loading.dart';
 import '../../widgets/ui/app_section_header.dart';
 import '../../widgets/ui/app_states.dart';
 import '../../widgets/ui/initials_avatar.dart';
 import '../../widgets/ui/invoice_card.dart';
 
-class CustomerDetailsScreen extends StatelessWidget {
+class CustomerDetailsScreen extends StatefulWidget {
   const CustomerDetailsScreen({super.key});
 
+  @override
+  State<CustomerDetailsScreen> createState() => _CustomerDetailsScreenState();
+}
+
+class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.find<CustomerController>().loadDetails(_customerId);
+    });
+  }
+
   String get _customerId => Get.arguments as String;
+
+  Future<void> _editCustomer(Customer customer) async {
+    final data = await CustomerFormSheet.show(context, customer: customer);
+    if (data == null || !mounted) return;
+
+    final updated = Customer(
+      id: customer.id,
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      address: data.address,
+      isActive: customer.isActive,
+      createdAt: customer.createdAt,
+    );
+    final error = await Get.find<CustomerController>().updateCustomer(updated);
+    if (!mounted) return;
+    if (error != null) {
+      Get.snackbar('customers.errorTitle'.tr, error);
+    } else {
+      Get.snackbar('common.update'.tr, 'common.success'.tr);
+    }
+  }
+
+  Future<void> _deleteCustomer() async {
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: 'customers.deleteTitle'.tr,
+      message: 'customers.deleteMessage'.tr,
+      confirmText: 'common.delete'.tr,
+      destructive: true,
+      confirmIcon: Icons.delete_outline,
+    );
+    if (confirmed != true) return;
+
+    final error = await Get.find<CustomerController>().deleteCustomer(
+      _customerId,
+    );
+    if (error != null) {
+      Get.snackbar('customers.deleteFailed'.tr, error);
+      return;
+    }
+    if (!mounted) return;
+    Get.back();
+    Get.snackbar('customers.deleteSuccess'.tr, 'common.success'.tr);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppAppBar(title: 'customers.detailsTitle'.tr),
+      appBar: AppAppBar(
+        title: 'customers.detailsTitle'.tr,
+        actions: [
+          GetX<CustomerController>(
+            builder: (controller) {
+              final customer = controller.byId(_customerId);
+              if (customer == null) return const SizedBox.shrink();
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'common.edit'.tr,
+                    onPressed: () => _editCustomer(customer),
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: 'common.delete'.tr,
+                    onSelected: (value) {
+                      if (value == 'delete') _deleteCustomer();
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.delete_outline),
+                          title: Text('common.delete'.tr),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
       body: GetX<CustomerController>(
         builder: (controller) {
           final customer = controller.byId(_customerId);
           if (customer == null) {
+            if (controller.isLoading) return const AppLoadingState();
             return AppErrorState(
               title: 'customers.errorTitle'.tr,
-              message: 'customers.emptySearchMessage'.tr,
+              message:
+                  controller.errorMessage ?? 'customers.emptySearchMessage'.tr,
               onRetry: controller.refresh,
             );
           }
 
           final invoices =
               Get.find<InvoiceController>().invoices
-                  .where((i) => i.customer.id == customer.id)
+                  .where((i) => !i.isHidden && i.customer.id == customer.id)
                   .toList()
                 ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          final settings = Get.find<SettingsController>();
           final approvedTotal = invoices.fold<double>(
             0,
-            (sum, i) =>
-                i.status == InvoiceStatus.approved ? sum + i.totalAmount : sum,
+            (sum, i) => i.status == InvoiceStatus.approved
+                ? sum +
+                      settings.convert(
+                        i.totalAmount,
+                        i.currency.id,
+                        settings.defaultCurrencyId,
+                      )
+                : sum,
           );
 
           return ListView(
@@ -68,7 +174,7 @@ class CustomerDetailsScreen extends StatelessWidget {
                       label: 'customers.statTotal'.tr,
                       value:
                           '${Formatters.amount(approvedTotal)} '
-                          '${Get.find<SettingsController>().defaultCurrency.code}',
+                          '${Get.find<SettingsController>().defaultCurrency?.code ?? ''}',
                       icon: Icons.trending_up_rounded,
                       emphasize: true,
                     ),

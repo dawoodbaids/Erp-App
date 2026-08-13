@@ -134,6 +134,14 @@ class SettingsScreen extends StatelessWidget {
               onRetry: controller.loadCurrenciesAndRates,
             );
           }
+          final defaultCurrency = controller.defaultCurrency;
+          if (defaultCurrency == null) {
+            return AppEmptyState(
+              icon: Icons.currency_exchange_outlined,
+              title: 'settings.noCurrenciesTitle'.tr,
+              message: 'settings.noCurrenciesMessage'.tr,
+            );
+          }
 
           final name = auth.currentUser?.displayName ?? 'Administrator';
           final username = auth.currentUser?.username ?? 'admin';
@@ -228,7 +236,7 @@ class SettingsScreen extends StatelessWidget {
                       title: 'settings.defaultCurrency'.tr,
                       subtitle: 'settings.defaultCurrencySubtitle'.tr,
                       trailing: _ValuePill(
-                        value: controller.defaultCurrency.code,
+                         value: defaultCurrency.code,
                       ),
                       onTap: () => _chooseCurrency(context, controller),
                     ),
@@ -263,7 +271,7 @@ class SettingsScreen extends StatelessWidget {
                       icon: Icons.swap_horiz_rounded,
                       title: 'settings.exchangeRates'.tr,
                       subtitle: 'settings.exchangeRatesSubtitle'.trParams({
-                        'currency': controller.defaultCurrency.code,
+                         'currency': defaultCurrency.code,
                       }),
                       onTap: () => Get.toNamed(AppRoutes.exchangeRates),
                     ),

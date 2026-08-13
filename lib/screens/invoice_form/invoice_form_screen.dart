@@ -19,7 +19,10 @@ import '../../widgets/product_selector.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/ui/app_appbar.dart';
 import '../../widgets/ui/app_card.dart';
+import '../../widgets/ui/app_loading.dart';
+import '../../widgets/ui/app_states.dart';
 
+//clean up and refactor the code to be more readable and maintainable
 class InvoiceFormScreen extends StatefulWidget {
   const InvoiceFormScreen({super.key});
 
@@ -29,6 +32,8 @@ class InvoiceFormScreen extends StatefulWidget {
 
 class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _loadingInvoice = false;
+  String? _invoiceLoadError;
 
   CreateInvoiceController get _controller =>
       Get.find<CreateInvoiceController>();
@@ -44,11 +49,36 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       if (invoice != null) {
         controller.loadForEdit(invoice);
       } else {
+        _loadingInvoice = true;
         controller.loadForCreate();
+        WidgetsBinding.instance.addPostFrameCallback((_) => _loadInvoice(args));
       }
     } else {
       controller.loadForCreate();
     }
+  }
+
+  Future<void> _loadInvoice(String id) async {
+    if (mounted) {
+      setState(() {
+        _loadingInvoice = true;
+        _invoiceLoadError = null;
+      });
+    }
+    final invoice = await Get.find<InvoiceController>().loadDetails(id);
+    if (!mounted) return;
+    if (invoice == null) {
+      setState(() {
+        _loadingInvoice = false;
+        _invoiceLoadError = 'Could not load the invoice. Please try again.';
+      });
+      return;
+    }
+    _controller.loadForEdit(invoice);
+    setState(() {
+      _loadingInvoice = false;
+      _invoiceLoadError = null;
+    });
   }
 
   Future<void> _scanBarcode() async {
@@ -131,6 +161,19 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+
+    if (_loadingInvoice) {
+      return const Scaffold(body: AppLoadingState());
+    }
+    if (_invoiceLoadError != null) {
+      return Scaffold(
+        body: AppErrorState(
+          title: 'form.errorTitle'.tr,
+          message: _invoiceLoadError!,
+          onRetry: () => _loadInvoice(Get.arguments as String),
+        ),
+      );
+    }
 
     return GetX<CreateInvoiceController>(
       builder: (controller) {
@@ -290,7 +333,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   }
 
   /// Read-only display of the invoice currency's rate against the base
-  /// currency. The rate comes from the backend; the user never enters prices.
+  /// currency. The rate comes from Firestore; the user never enters prices.
   Widget _exchangeRateInfo(
     BuildContext context,
     CreateInvoiceController controller,
@@ -298,7 +341,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     final theme = Theme.of(context);
     final settings = Get.find<SettingsController>();
     final currency = controller.selectedCurrency.value;
-    final baseCode = settings.defaultCurrency.code;
+    final baseCode = settings.defaultCurrency?.code ?? '';
     final currencyCode = currency?.code ?? baseCode;
 
     return AppCard(

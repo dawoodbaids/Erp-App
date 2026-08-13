@@ -21,10 +21,10 @@ class CurrencySelector extends StatelessWidget {
           key: ValueKey('currency-${selected?.id ?? 'none'}'),
           initialValue: selected,
           isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Currency',
-            prefixIcon: Icon(Icons.currency_exchange),
-          ),
+           decoration: InputDecoration(
+             labelText: 'form.currency'.tr,
+             prefixIcon: const Icon(Icons.currency_exchange),
+           ),
           items: currencies
               .map((c) => DropdownMenuItem(value: c, child: Text(c.code)))
               .toList(),

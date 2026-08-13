@@ -1,15 +1,16 @@
 import 'package:get/get.dart';
 
-import '../core/network/api_client.dart';
 import '../core/utils/tax_calculator.dart';
 import '../models/currency.dart';
 import '../models/customer.dart';
 import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 import '../models/product.dart';
+import '../services/firebase_service_exception.dart';
 import '../services/invoice_service.dart';
 import '../services/product_service.dart';
 import 'customer_controller.dart';
+import 'dashboard_controller.dart';
 import 'invoice_controller.dart';
 import 'settings_controller.dart';
 
@@ -92,9 +93,7 @@ class CreateInvoiceController extends GetxController {
 
   void setInvoiceName(String value) => invoiceName.value = value;
 
-  /// Converts each item back from its original price into the new invoice
-  /// currency. The backend remains the financial source of truth; this is a
-  /// preview using the rates the backend published.
+  /// Converts each item into the selected invoice currency for the UI preview.
   void _recalculateItems() {
     final invoiceCurrencyId = selectedCurrency.value?.id;
     if (invoiceCurrencyId == null) return;
@@ -139,7 +138,7 @@ class CreateInvoiceController extends GetxController {
         barcode: product.barcode,
         originalUnitPrice: product.price,
         originalCurrencyId: product.currencyId,
-        originalCurrencyCode: originalCurrency.code,
+        originalCurrencyCode: originalCurrency?.code ?? '',
         quantity: 1,
         unitPrice: _settings.convert(
           product.price,
@@ -176,12 +175,9 @@ class CreateInvoiceController extends GetxController {
       final product = await _productService.getProductByBarcode(normalized);
       addProduct(product);
       return null;
-    } on ApiException catch (e) {
-      if (e.statusCode == 404) {
+    } on FirebaseServiceException catch (e) {
+      if (e.code == 'not-found') {
         return 'No product found with barcode $normalized.';
-      }
-      if (e.statusCode == 401) {
-        return 'Your session has expired. Please log in again.';
       }
       return e.message;
     } catch (_) {
@@ -208,16 +204,16 @@ class CreateInvoiceController extends GetxController {
       return 'Invoice name is required';
     }
     if (selectedCustomer.value == null) return 'Please select a customer';
-    if (int.tryParse(selectedCustomer.value!.id) == null) {
+    if (selectedCustomer.value!.id.isEmpty) {
       return 'The selected customer is invalid';
     }
     if (selectedCurrency.value == null) return 'Please select a currency';
-    if (int.tryParse(selectedCurrency.value!.id) == null) {
+    if (selectedCurrency.value!.id.isEmpty) {
       return 'The selected currency is invalid';
     }
     if (items.isEmpty) return 'Add at least one item to the invoice';
     for (final item in items) {
-      if (int.tryParse(item.productId) == null) {
+      if (item.productId.isEmpty) {
         return 'A product on this invoice is invalid';
       }
       if (item.quantity <= 0) {
@@ -238,11 +234,12 @@ class CreateInvoiceController extends GetxController {
     try {
       if (isEditMode) {
         final existing = _invoiceController.byId(_editingId.value);
+        if (existing == null) return 'The invoice could not be found.';
         final invoice = Invoice(
           id: _editingId.value,
-          invoiceNumber: existing?.invoiceNumber ?? '',
+          invoiceNumber: existing.invoiceNumber,
           invoiceName: invoiceName.value.trim(),
-          isHidden: existing?.isHidden ?? false,
+          isHidden: existing.isHidden,
           customer: selectedCustomer.value!,
           currency: selectedCurrency.value!,
           exchangeRate: exchangeRate.value,
@@ -252,9 +249,11 @@ class CreateInvoiceController extends GetxController {
           subtotal: subtotal,
           taxAmount: tax,
           totalAmount: total,
-          createdAt: existing?.createdAt ?? DateTime.now(),
+          createdAt: existing.createdAt,
         );
-        _invoiceController.updateInvoice(invoice);
+        await _invoiceService.updateInvoice(invoice);
+        await _invoiceController.refresh();
+        await _refreshDashboard();
         return null;
       }
 
@@ -276,13 +275,20 @@ class CreateInvoiceController extends GetxController {
 
       lastCreated.value = await _invoiceService.createInvoice(invoice);
       await _invoiceController.refresh();
+      await _refreshDashboard();
       return null;
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       return e.message;
     } catch (_) {
       return 'Could not create the invoice. Please try again.';
     } finally {
       _isSaving.value = false;
+    }
+  }
+
+  Future<void> _refreshDashboard() async {
+    if (Get.isRegistered<DashboardController>()) {
+      await Get.find<DashboardController>().refresh();
     }
   }
 }

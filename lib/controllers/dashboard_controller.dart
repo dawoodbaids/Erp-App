@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
 
-import '../core/network/api_client.dart';
 import '../models/dashboard.dart';
-import '../services/invoice_service.dart';
+import '../services/dashboard_service.dart';
+import '../services/firebase_service_exception.dart';
 
 /// Loads the aggregated numbers, sales trend and invoice status breakdown
 /// from the dashboard endpoints.
@@ -14,7 +14,7 @@ class DashboardController extends GetxController {
   final _isLoading = false.obs;
   final _errorMessage = Rxn<String>();
 
-  final _invoiceService = InvoiceService();
+  final _dashboardService = DashboardService();
 
   bool get isLoading => _isLoading.value;
   String? get errorMessage => _errorMessage.value;
@@ -25,14 +25,14 @@ class DashboardController extends GetxController {
     _errorMessage.value = null;
     try {
       final results = await Future.wait([
-        _invoiceService.getSummary(),
-        _invoiceService.getSalesTrend(),
-        _invoiceService.getInvoiceStatus(),
+        _dashboardService.getSummary(),
+        _dashboardService.getSalesTrend(),
+        _dashboardService.getInvoiceStatus(),
       ]);
       summary.value = results[0] as DashboardSummary;
       salesTrend.value = results[1] as List<SalesPoint>;
       invoiceStatus.value = results[2] as InvoiceStatusStats;
-    } on ApiException catch (e) {
+    } on FirebaseServiceException catch (e) {
       _errorMessage.value = e.message;
     } catch (_) {
       _errorMessage.value = 'Could not load the dashboard. Please try again.';
