@@ -11,6 +11,7 @@ import '../../screens/settings/currency_screen.dart';
 import '../../screens/settings/exchange_rates_screen.dart';
 import '../../screens/settings/language_screen.dart';
 import '../../screens/settings/settings_screen.dart';
+import '../../screens/settings/tax_screen.dart';
 import '../../screens/shell/shell_screen.dart';
 import 'auth_middleware.dart';
 import 'app_routes.dart';
@@ -66,6 +67,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.exchangeRates,
       page: () => const ExchangeRatesScreen(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: AppRoutes.taxes,
+      page: () => const TaxScreen(),
       middlewares: [AuthMiddleware()],
     ),
     GetPage(

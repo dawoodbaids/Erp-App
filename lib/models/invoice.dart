@@ -54,9 +54,9 @@ TaxMode parseTaxMode(String value) =>
 class Invoice {
   final String id;
 
-  /// Sequential, numeric-only invoice number (1, 2, 3, ...). The Firebase
-  /// document ID is stored separately in [id] and never shown to users.
-  final int invoiceNumber;
+  /// Sequential, unique invoice number shown to users, e.g. `INV-2026-0001`.
+  /// The Firebase document ID is stored separately in [id] and never shown.
+  final String invoiceNumber;
   final String invoiceName;
   final bool isHidden;
   final Customer customer;
@@ -68,6 +68,10 @@ class Invoice {
   final double taxRate;
   final TaxMode taxMode;
   final InvoiceStatus status;
+
+  /// Discount applied before tax, in the invoice currency. Stored per
+  /// invoice so later edits never change an existing invoice.
+  final double discountAmount;
   final List<InvoiceItem> items;
   final double subtotal;
   final double taxAmount;
@@ -88,6 +92,7 @@ class Invoice {
     this.taxRate = 0,
     required this.taxMode,
     required this.status,
+    this.discountAmount = 0,
     required this.items,
     required this.subtotal,
     required this.taxAmount,
@@ -97,8 +102,10 @@ class Invoice {
     this.cancelledAt,
   });
 
-  /// Human-readable number shown in the UI, e.g. `#1`.
-  String get displayNumber => '#$invoiceNumber';
+  /// Human-readable number shown in the UI, e.g. `INV-2026-0001`. Legacy
+  /// numeric numbers keep their `#1` style.
+  String get displayNumber =>
+      invoiceNumber.startsWith('INV-') ? invoiceNumber : '#$invoiceNumber';
 
   factory Invoice.fromFirestore(String id, Map<String, dynamic> data) {
     final items = (data['items'] as List?)
@@ -114,7 +121,7 @@ class Invoice {
         const <InvoiceItem>[];
     return Invoice(
       id: id,
-      invoiceNumber: firestoreInvoiceNumber(data['invoiceNumber']),
+      invoiceNumber: firestoreInvoiceNumberLabel(data['invoiceNumber']),
       invoiceName: firestoreString(data['invoiceName']),
       isHidden: firestoreBool(data['isHidden']),
       customer: Customer(
@@ -132,6 +139,7 @@ class Invoice {
       taxRate: firestoreDouble(data['taxRate']),
       taxMode: parseTaxMode(firestoreString(data['taxMode'])),
       status: parseInvoiceStatus(firestoreString(data['status'])),
+      discountAmount: firestoreDouble(data['discountAmount']),
       items: items,
       subtotal: firestoreDouble(data['subtotal']),
       taxAmount: firestoreDouble(data['taxAmount']),
@@ -157,6 +165,7 @@ class Invoice {
     'taxRate': taxRate,
     'taxMode': taxMode == TaxMode.inclusive ? 'Inclusive' : 'Exclusive',
     'status': status.label,
+    'discountAmount': discountAmount,
     'items': items.map((item) => item.toFirestore()).toList(),
     'subtotal': subtotal,
     'taxAmount': taxAmount,
@@ -177,6 +186,7 @@ class Invoice {
     double? taxRate,
     TaxMode? taxMode,
     InvoiceStatus? status,
+    double? discountAmount,
     List<InvoiceItem>? items,
     double? subtotal,
     double? taxAmount,
@@ -196,6 +206,7 @@ class Invoice {
       taxRate: taxRate ?? this.taxRate,
       taxMode: taxMode ?? this.taxMode,
       status: status ?? this.status,
+      discountAmount: discountAmount ?? this.discountAmount,
       items: items ?? this.items,
       subtotal: subtotal ?? this.subtotal,
       taxAmount: taxAmount ?? this.taxAmount,

@@ -6,7 +6,6 @@ import '../../controllers/product_controller.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/product_image.dart';
-import '../../core/utils/tax_calculator.dart';
 import '../../models/invoice.dart';
 import '../../models/invoice_item.dart';
 import '../../widgets/confirmation_dialog.dart';
@@ -198,7 +197,9 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
                 const SizedBox(height: 8),
                 InvoiceSummary(
                   subtotal: invoice.subtotal,
+                  discount: invoice.discountAmount,
                   tax: invoice.taxAmount,
+                  taxRate: invoice.taxRate,
                   total: invoice.totalAmount,
                   currencyCode: invoice.currency.code,
                 ),
@@ -359,7 +360,7 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
   Widget _itemTile(BuildContext context, Invoice invoice, InvoiceItem item) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final lineTotal = TaxCalculator.lineTotal(item, invoice.taxMode);
+    final lineTotal = item.lineTotal;
 
     return AppCard(
       padding: const EdgeInsets.all(14),
@@ -368,10 +369,12 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
         children: [
           Row(
             children: [
-              buildProductImage(
-                Get.find<ProductController>().byId(item.productId)?.image,
-                size: 36,
-                context: context,
+              Obx(
+                () => buildProductImage(
+                  Get.find<ProductController>().byId(item.productId)?.image,
+                  size: 36,
+                  context: context,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(

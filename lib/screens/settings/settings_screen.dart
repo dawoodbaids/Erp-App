@@ -5,12 +5,9 @@ import '../../controllers/auth_controller.dart';
 import '../../controllers/settings_controller.dart';
 import '../../controllers/shell_controller.dart';
 import '../../core/routes/app_routes.dart';
-import '../../models/currency.dart';
 import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/ui/app_appbar.dart';
 import '../../widgets/ui/app_card.dart';
-import '../../widgets/ui/app_loading.dart';
-import '../../widgets/ui/app_states.dart';
 import '../../widgets/ui/app_tile.dart';
 import '../../widgets/ui/initials_avatar.dart';
 
@@ -29,48 +26,6 @@ class SettingsScreen extends StatelessWidget {
     if (confirmed == true) Get.find<AuthController>().logout();
   }
 
-  Future<void> _chooseCurrency(
-    BuildContext context,
-    SettingsController controller,
-  ) async {
-    final selected = await showModalBottomSheet<Currency>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  'settings.defaultCurrency'.tr,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ),
-            ...controller.currencies.map(
-              (currency) => _ChoiceTile(
-                icon: Icons.currency_exchange_outlined,
-                title: '${currency.code} · ${currency.name}',
-                selected: currency.id == controller.defaultCurrencyId,
-                onTap: () => Navigator.of(context).pop(currency),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-    if (selected == null) return;
-
-    final error = await controller.setDefaultCurrency(selected.id);
-    if (error != null) Get.snackbar('settings.defaultCurrency'.tr, error);
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
@@ -80,26 +35,6 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppAppBar(title: 'settings.title'.tr, showBack: false),
       body: GetX<SettingsController>(
         builder: (controller) {
-          if (controller.isLoading && controller.currencies.isEmpty) {
-            return const AppLoadingState();
-          }
-          if (controller.errorMessage != null &&
-              controller.currencies.isEmpty) {
-            return AppErrorState(
-              title: 'settings.title'.tr,
-              message: controller.errorMessage!,
-              onRetry: controller.loadCurrenciesAndRates,
-            );
-          }
-          final defaultCurrency = controller.defaultCurrency;
-          if (defaultCurrency == null) {
-            return AppEmptyState(
-              icon: Icons.currency_exchange_outlined,
-              title: 'settings.noCurrenciesTitle'.tr,
-              message: 'settings.noCurrenciesMessage'.tr,
-            );
-          }
-
           final name = auth.currentUser?.displayName ?? 'Administrator';
           final username = auth.currentUser?.username ?? 'admin';
           final language = controller.locale.languageCode == 'ar'
@@ -176,19 +111,6 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-                _SectionLabel('settings.preferences'.tr),
-                AppGroupCard(
-                  children: [
-                    AppTile(
-                      icon: Icons.currency_exchange_outlined,
-                      title: 'settings.defaultCurrency'.tr,
-                      subtitle: 'settings.defaultCurrencySubtitle'.tr,
-                      trailing: _ValuePill(value: defaultCurrency.code),
-                      onTap: () => _chooseCurrency(context, controller),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
                 _SectionLabel('settings.invoiceTools'.tr),
                 AppGroupCard(
                   children: [
@@ -207,19 +129,19 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     const AppDivider(),
                     AppTile(
-                      icon: Icons.payments_outlined,
-                      title: 'settings.currencies'.tr,
-                      subtitle: 'settings.currenciesSubtitle'.tr,
-                      onTap: () => Get.toNamed(AppRoutes.currencies),
-                    ),
-                    const AppDivider(),
-                    AppTile(
                       icon: Icons.swap_horiz_rounded,
                       title: 'settings.exchangeRates'.tr,
                       subtitle: 'settings.exchangeRatesSubtitle'.trParams({
-                        'currency': defaultCurrency.code,
+                        'currency': controller.defaultCurrency?.code ?? '',
                       }),
                       onTap: () => Get.toNamed(AppRoutes.exchangeRates),
+                    ),
+                    const AppDivider(),
+                    AppTile(
+                      icon: Icons.percent_outlined,
+                      title: 'settings.taxes'.tr,
+                      subtitle: 'settings.taxesSubtitle'.tr,
+                      onTap: () => Get.toNamed(AppRoutes.taxes),
                     ),
                   ],
                 ),
@@ -268,58 +190,6 @@ class _SectionLabel extends StatelessWidget {
           letterSpacing: 1,
         ),
       ),
-    );
-  }
-}
-
-class _ValuePill extends StatelessWidget {
-  final String value;
-
-  const _ValuePill({required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        value,
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.primary,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _ChoiceTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ChoiceTile({
-    required this.icon,
-    required this.title,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      onTap: onTap,
-      leading: Icon(icon, color: theme.colorScheme.primary),
-      title: Text(title),
-      trailing: selected
-          ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
-          : const Icon(Icons.radio_button_unchecked),
     );
   }
 }

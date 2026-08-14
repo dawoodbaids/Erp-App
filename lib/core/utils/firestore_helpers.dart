@@ -27,11 +27,21 @@ DateTime? firestoreDate(Object? value) {
 DateTime requiredFirestoreDate(Object? value) =>
     firestoreDate(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
 
-/// Reads a numeric invoice number. New invoices store an int; legacy invoices
-/// store a string such as "INV-000007". Returns the numeric value or 0 when
-/// missing so old documents never crash.
+/// Reads the trailing numeric value of an invoice number. New invoices store
+/// a readable string such as "INV-2026-0003" (sequence 3), legacy invoices
+/// store an int or a string such as "INV-000007". Returns 0 when missing so
+/// old documents never crash.
 int firestoreInvoiceNumber(Object? value) {
   if (value is num) return value.toInt();
-  final match = RegExp(r'(\d+)').firstMatch(value?.toString() ?? '');
-  return match == null ? 0 : int.tryParse(match.group(1)!) ?? 0;
+  final matches = RegExp(r'\d+').allMatches(value?.toString() ?? '').toList();
+  if (matches.isEmpty) return 0;
+  return int.tryParse(matches.last.group(0)!) ?? 0;
+}
+
+/// Reads the display label of an invoice number. Numeric legacy values are
+/// converted to strings so every invoice has a stable, non-empty label.
+String firestoreInvoiceNumberLabel(Object? value) {
+  if (value is num) return value.toInt().toString();
+  final text = firestoreString(value).trim();
+  return text.isEmpty ? '0' : text;
 }

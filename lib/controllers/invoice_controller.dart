@@ -1,8 +1,10 @@
 import 'package:get/get.dart';
 
+import '../core/utils/firestore_helpers.dart';
 import '../models/invoice.dart';
 import '../models/product.dart';
 import '../services/firebase_service_exception.dart';
+import '../services/invoice_number_service.dart';
 import '../services/invoice_service.dart';
 import 'dashboard_controller.dart';
 import 'product_controller.dart';
@@ -31,7 +33,7 @@ class InvoiceController extends GetxController {
           _statusFilter.value == null || invoice.status == _statusFilter.value;
       if (!matchesStatus) return false;
       if (query.isEmpty) return true;
-      return '${invoice.invoiceNumber}'.contains(query) ||
+      return invoice.invoiceNumber.toLowerCase().contains(query) ||
           invoice.invoiceName.toLowerCase().contains(query) ||
           invoice.customer.name.toLowerCase().contains(query);
     }).toList();
@@ -50,14 +52,16 @@ class InvoiceController extends GetxController {
     return null;
   }
 
-  /// Preview of the next invoice number based on the loaded invoices. The
-  /// authoritative number is assigned by the Firestore counter when saving.
-  int previewInvoiceNumber() {
+  /// Preview of the next invoice number (e.g. `INV-2026-0004`) based on the
+  /// loaded invoices. The authoritative number is assigned by the Firestore
+  /// counter when saving.
+  String previewInvoiceNumber() {
     var maxNumber = 0;
     for (final invoice in invoices) {
-      if (invoice.invoiceNumber > maxNumber) maxNumber = invoice.invoiceNumber;
+      final number = firestoreInvoiceNumber(invoice.invoiceNumber);
+      if (number > maxNumber) maxNumber = number;
     }
-    return maxNumber + 1;
+    return InvoiceNumberService.format(maxNumber + 1);
   }
 
   void addInvoice(Invoice invoice) {
@@ -114,9 +118,10 @@ class InvoiceController extends GetxController {
     }
   }
 
-  /// Looks up an invoice by its numeric invoice number (e.g. 7). Returns the
-  /// invoice, or null with an error message when not found.
-  Future<(Invoice?, String?)> findByNumber(int number) async {
+  /// Looks up an invoice by its readable invoice number (e.g.
+  /// `INV-2026-0001`). Returns the invoice, or null with an error message
+  /// when not found.
+  Future<(Invoice?, String?)> findByNumber(String number) async {
     try {
       final invoice = await _invoiceService.findByNumber(number);
       _replaceInvoice(invoice);

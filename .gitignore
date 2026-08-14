@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase credentials - never commit
+firebase_seed/serviceAccountKey.json
+firebase_seed/node_modules/

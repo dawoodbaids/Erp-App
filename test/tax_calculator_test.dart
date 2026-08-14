@@ -7,7 +7,11 @@ import 'package:erp_mobileapp_ui/models/invoice.dart';
 import 'package:erp_mobileapp_ui/models/invoice_item.dart';
 import 'package:erp_mobileapp_ui/models/product.dart';
 
-InvoiceItem _item({double quantity = 1, double unitPrice = 0, double taxRate = 0}) {
+InvoiceItem _item({
+  double quantity = 1,
+  double unitPrice = 0,
+  double taxRate = 0,
+}) {
   return InvoiceItem(
     id: 'it',
     productId: 'p',
@@ -27,10 +31,15 @@ void main() {
         _item(quantity: 2, unitPrice: 100, taxRate: 16),
       ];
 
-      expect(TaxCalculator.subtotal(items, TaxMode.exclusive), 200);
-      expect(TaxCalculator.tax(items, TaxMode.exclusive), 32);
-      expect(TaxCalculator.total(items, TaxMode.exclusive), 232);
-      expect(TaxCalculator.lineTotal(items.first, TaxMode.exclusive), 232);
+      expect(TaxCalculator.subtotal(items), 200);
+      expect(
+        TaxCalculator.taxAmount(200, 0, 16, TaxMode.exclusive),
+        32,
+      );
+      expect(
+        TaxCalculator.total(200, 0, 16, TaxMode.exclusive),
+        232,
+      );
     });
 
     test('product tax rate feeds the invoice item', () {
@@ -54,19 +63,50 @@ void main() {
       );
 
       expect(item.taxRate, 16);
-      expect(TaxCalculator.total([item], TaxMode.exclusive), 23.20);
+      expect(TaxCalculator.subtotal([item]), 20);
+      expect(
+        TaxCalculator.total(20, 0, 16, TaxMode.exclusive),
+        23.20,
+      );
     });
   });
 
   group('Tax inclusive', () {
     test('derives net and tax from a gross of 116 at 16%', () {
-      final items = [
-        _item(quantity: 1, unitPrice: 116, taxRate: 16),
-      ];
+      expect(TaxCalculator.subtotal([_item(quantity: 1, unitPrice: 116, taxRate: 16)]), 116);
+      expect(
+        TaxCalculator.taxAmount(116, 0, 16, TaxMode.inclusive),
+        16,
+      );
+      expect(
+        TaxCalculator.total(116, 0, 16, TaxMode.inclusive),
+        116,
+      );
+    });
+  });
 
-      expect(TaxCalculator.subtotal(items, TaxMode.inclusive), 100);
-      expect(TaxCalculator.tax(items, TaxMode.inclusive), 16);
-      expect(TaxCalculator.total(items, TaxMode.inclusive), 116);
+  group('Discount is applied before tax', () {
+    test('100 at 16% with a 10 discount', () {
+      expect(TaxCalculator.taxableAmount(100, 10), 90);
+      expect(
+        TaxCalculator.taxAmount(100, 10, 16, TaxMode.exclusive),
+        14.40,
+      );
+      expect(
+        TaxCalculator.total(100, 10, 16, TaxMode.exclusive),
+        104.40,
+      );
+    });
+
+    test('inclusive mode ignores discount in the final total', () {
+      expect(
+        TaxCalculator.taxAmount(116, 10, 16, TaxMode.inclusive),
+        14.62,
+      );
+      expect(
+        TaxCalculator.total(116, 10, 16, TaxMode.inclusive),
+        106,
+      );
     });
   });
 
@@ -74,7 +114,7 @@ void main() {
     test('only drafts are editable', () {
       Invoice invoice(InvoiceStatus status) => Invoice(
         id: 'invoice-${status.name}',
-        invoiceNumber: status.index + 1,
+        invoiceNumber: '${status.index + 1}',
         customer: const Customer(id: 'customer-1', name: 'Test Customer'),
         currency: const Currency(
           id: 'currency-1',

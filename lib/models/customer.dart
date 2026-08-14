@@ -24,13 +24,20 @@ class Customer {
   });
 
   factory Customer.fromFirestore(String id, Map<String, dynamic> data) {
+    final currencyId = firestoreString(data['currencyId']);
     return Customer(
       id: id,
       name: firestoreString(data['name']),
       phone: firestoreStringOrNull(data['phone']),
       email: firestoreString(data['email']),
       address: firestoreStringOrNull(data['address']),
-      currencyId: firestoreString(data['currencyId']),
+      // Tolerate hand-created documents that store the currency under a
+      // different field name.
+      currencyId: currencyId.isNotEmpty
+          ? currencyId
+          : (firestoreString(data['currency']).isNotEmpty
+              ? firestoreString(data['currency'])
+              : firestoreString(data['currencyCode'])),
       isActive: data.containsKey('isActive')
           ? firestoreBool(data['isActive'])
           : true,

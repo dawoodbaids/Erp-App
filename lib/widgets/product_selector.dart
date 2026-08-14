@@ -27,26 +27,51 @@ class _ProductSelectorSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final settings = Get.find<SettingsController>();
     final height = MediaQuery.sizeOf(context).height;
 
-    return SizedBox(
-      height: height * 0.85,
+     return SizedBox(
+       height: height * 0.88,
       child: GetX<ProductController>(
         builder: (controller) {
           final products = controller.filteredProducts;
 
           return Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Text(
-                  'productSelector.title'.tr,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+               Padding(
+                 padding: const EdgeInsets.fromLTRB(20, 2, 20, 14),
+                 child: Row(
+                   children: [
+                     Container(
+                       width: 38,
+                       height: 38,
+                       decoration: BoxDecoration(
+                         color: theme.colorScheme.primaryContainer,
+                         borderRadius: BorderRadius.circular(11),
+                       ),
+                       child: Icon(
+                         Icons.inventory_2_outlined,
+                         color: theme.colorScheme.primary,
+                       ),
+                     ),
+                     const SizedBox(width: 12),
+                     Expanded(
+                       child: Text(
+                         'productSelector.title'.tr,
+                         style: theme.textTheme.titleLarge?.copyWith(
+                           fontWeight: FontWeight.w800,
+                         ),
+                       ),
+                     ),
+                     Text(
+                       '${products.length}',
+                       style: theme.textTheme.titleMedium?.copyWith(
+                         color: theme.colorScheme.primary,
+                         fontWeight: FontWeight.w900,
+                       ),
+                     ),
+                   ],
+                 ),
+               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: TextField(
@@ -76,18 +101,15 @@ class _ProductSelectorSheet extends StatelessWidget {
                     : ListView.builder(
                         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                         itemCount: products.length,
-                        itemBuilder: (context, index) {
+itemBuilder: (context, index) {
                           final product = products[index];
-                          final currency = settings.currencyById(
-                            product.currencyId,
-                          );
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: AppCard(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
+                           return Padding(
+                             padding: const EdgeInsets.only(bottom: 10),
+                             child: AppCard(
+                               padding: const EdgeInsets.symmetric(
+                                 horizontal: 12,
+                                 vertical: 12,
+                               ),
                               onTap: () => Navigator.of(context).pop(product),
                               child: Row(
                                 children: [
@@ -102,25 +124,32 @@ class _ProductSelectorSheet extends StatelessWidget {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          product.name,
+                                         Text(
+                                           product.name,
+                                           maxLines: 1,
+                                           overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.bodyLarge
                                               ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                         ),
                                         const SizedBox(height: 2),
-                                        Text(
-                                          '${product.barcode} · '
-                                          '${Formatters.amountWithCurrency(currency, product.price)}'
-                                          ' · ${Formatters.rate(product.taxRate)}%',
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                        ),
+                                         Builder(
+                                           builder: (context) {
+                                             final settings =
+                                                 Get.find<SettingsController>();
+                                             return Text(
+                                               '${product.barcode}  •  '
+                                               '${settings.formatProductPrice(product)}'
+                                               '  •  ${Formatters.rate(product.taxRate)}%',
+                                               style: theme.textTheme.bodySmall
+                                                   ?.copyWith(
+                                                     color: theme.colorScheme
+                                                         .onSurfaceVariant,
+                                                   ),
+                                             );
+                                           },
+                                         ),
                                       ],
                                     ),
                                   ),

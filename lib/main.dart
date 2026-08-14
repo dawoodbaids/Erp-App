@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
+
+import 'firebase_options.dart';
 
 import 'controllers/auth_controller.dart';
 import 'controllers/create_invoice_controller.dart';
@@ -20,9 +21,7 @@ import 'core/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (defaultTargetPlatform == TargetPlatform.android) {
-    await Firebase.initializeApp();
-  }
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   Get.put(SettingsController());
   Get.put(ProductController());

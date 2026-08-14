@@ -46,6 +46,9 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
       phone: data.phone,
       email: data.email,
       address: data.address,
+      currencyId: data.currencyId.isNotEmpty
+          ? data.currencyId
+          : customer.currencyId,
       isActive: customer.isActive,
       createdAt: customer.createdAt,
     );
@@ -136,19 +139,22 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
             );
           }
 
-          final invoices =
-              Get.find<InvoiceController>().invoices
-                  .where((i) => !i.isHidden && i.customer.id == customer.id)
-                  .toList()
-                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          final approvedTotal = invoices.fold<double>(
-            0,
-            (sum, i) => i.status == InvoiceStatus.approved
-                ? sum + i.totalAmount * i.exchangeRate
-                : sum,
-          );
+          return Obx(() {
+            final invoices =
+                Get.find<InvoiceController>().invoices
+                    .where((i) => !i.isHidden && i.customer.id == customer.id)
+                    .toList()
+                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            final approvedTotal = invoices.fold<double>(
+              0,
+              (sum, i) => i.status == InvoiceStatus.approved
+                  ? sum + i.totalAmount * i.exchangeRate
+                  : sum,
+            );
+            final currencyCode =
+                Get.find<SettingsController>().defaultCurrency?.code ?? '';
 
-          return ListView(
+            return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
               _HeaderCard(customer: customer),
@@ -167,8 +173,7 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                     child: _StatBox(
                       label: 'customers.statTotal'.tr,
                       value:
-                          '${Formatters.amount(approvedTotal)} '
-                          '${Get.find<SettingsController>().defaultCurrency?.code ?? ''}',
+                          '${Formatters.amount(approvedTotal)} $currencyCode',
                       icon: Icons.trending_up_rounded,
                       emphasize: true,
                     ),
@@ -208,6 +213,7 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                 ),
             ],
           );
+          });
         },
       ),
       floatingActionButton: FloatingActionButton.extended(

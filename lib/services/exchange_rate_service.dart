@@ -63,21 +63,104 @@ class ExchangeRateService {
 
       final ratesSnapshot = await _rates.get();
       final rates = <String, double>{};
+      final currenciesByCode = <String, String>{};
+      for (final doc in currenciesSnapshot.docs) {
+        final code = firestoreString(doc.data()['code']);
+        if (code.isNotEmpty) currenciesByCode[code.toLowerCase()] = doc.id;
+      }
       for (final doc in ratesSnapshot.docs) {
         final data = doc.data();
         final currencyId = firestoreString(data['currencyId']);
         if (currencyId.isEmpty) continue;
         final rate = firestoreDouble(data['rateToBase']);
-        if (rate > 0) rates[currencyId] = rate;
+        if (rate > 0) {
+          rates[currencyId] = rate;
+          final idForCode = currenciesByCode[currencyId.toLowerCase()];
+          if (idForCode != null) rates[idForCode] = rate;
+        }
       }
+
+      final resolvedFrom = ExchangeRateResolver.resolveCurrencyId(
+        rates,
+        fromCurrencyId,
+        currenciesByCode,
+      );
+      final resolvedTo = ExchangeRateResolver.resolveCurrencyId(
+        rates,
+        toCurrencyId,
+        currenciesByCode,
+      );
 
       return ExchangeRateResolver.rateBetween(
         rates,
-        fromCurrencyId,
-        toCurrencyId,
+        resolvedFrom,
+        resolvedTo,
         baseCurrencyId,
       );
     }, 'Could not load the exchange rate. Please try again.');
+  }
+
+  /// Creates an exchange rate document for a currency (rate against the
+  /// base currency). Fails when the currency is the base currency or a rate
+  /// already exists for it.
+  Future<ExchangeRate> createRate(String currencyId, double rate) {
+    return runFirebase(() async {
+      if (rate <= 0) {
+        throw const FirebaseServiceException(
+          'Rate must be greater than zero.',
+          code: 'invalid-argument',
+        );
+      }
+      final currency = await _currencies.doc(currencyId).get();
+      if (!currency.exists || currency.data() == null) {
+        throw const FirebaseServiceException(
+          'The currency was not found.',
+          code: 'not-found',
+        );
+      }
+      if (currency.data()!['isBaseCurrency'] == true) {
+        throw const FirebaseServiceException(
+          'The base currency rate is always 1.',
+          code: 'invalid-argument',
+        );
+      }
+      final existing = await _rates
+          .where('currencyId', isEqualTo: currencyId)
+          .limit(1)
+          .get();
+      if (existing.docs.isNotEmpty) {
+        throw const FirebaseServiceException(
+          'An exchange rate already exists for this currency.',
+          code: 'already-exists',
+        );
+      }
+      final reference = _rates.doc();
+      await reference.set({
+        'currencyId': currencyId,
+        'rateToBase': rate,
+        'effectiveDate': FieldValue.serverTimestamp(),
+      });
+      return ExchangeRate(
+        id: reference.id,
+        currencyId: currencyId,
+        rateToBase: rate,
+        effectiveDate: DateTime.now(),
+      );
+    }, 'Could not create the exchange rate. Please try again.');
+  }
+
+  Future<void> deleteRate(String id) {
+    return runFirebase(() async {
+      final reference = _rates.doc(id);
+      final snapshot = await reference.get();
+      if (!snapshot.exists || snapshot.data() == null) {
+        throw const FirebaseServiceException(
+          'The exchange rate was not found.',
+          code: 'not-found',
+        );
+      }
+      await reference.delete();
+    }, 'Could not delete the exchange rate. Please try again.');
   }
 
   Future<ExchangeRate> updateRate(String id, double rate) {

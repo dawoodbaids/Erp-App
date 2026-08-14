@@ -23,6 +23,95 @@ class CurrencyService {
     }, 'Could not load currencies. Please try again.');
   }
 
+  /// Creates a currency in Firestore. The first currency ever created is
+  /// automatically marked as the base currency so the app has a valid
+  /// conversion anchor.
+  Future<Currency> createCurrency(Currency draft) {
+    return runFirebase(() async {
+      final code = draft.code.trim().toUpperCase();
+      if (code.isEmpty) {
+        throw const FirebaseServiceException(
+          'Currency code is required.',
+          code: 'invalid-argument',
+        );
+      }
+      final existing = await _currencies.get();
+      for (final doc in existing.docs) {
+        final data = doc.data();
+        if ((data['code'] ?? '').toString().toUpperCase() == code) {
+          throw const FirebaseServiceException(
+            'A currency with this code already exists.',
+            code: 'already-exists',
+          );
+        }
+      }
+      final reference = _currencies.doc();
+      final isFirst = existing.docs.isEmpty;
+      await reference.set({
+        ...draft.toFirestore(),
+        'code': code,
+        'isBaseCurrency': draft.isBaseCurrency || isFirst,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return Currency.fromFirestore(reference.id, {
+        ...draft.toFirestore(),
+        'code': code,
+        'isBaseCurrency': draft.isBaseCurrency || isFirst,
+      });
+    }, 'Could not create the currency. Please try again.');
+  }
+
+  Future<Currency> updateCurrency(Currency currency) {
+    return runFirebase(() async {
+      final reference = _currencies.doc(currency.id);
+      final snapshot = await reference.get();
+      if (!snapshot.exists || snapshot.data() == null) {
+        throw const FirebaseServiceException(
+          'The currency was not found.',
+          code: 'not-found',
+        );
+      }
+      await reference.update({
+        ...currency.toFirestore(),
+        'code': currency.code.trim().toUpperCase(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return currency;
+    }, 'Could not save the currency. Please try again.');
+  }
+
+  /// Deletes a currency and any exchange rate documents that reference it.
+  /// The base currency cannot be deleted.
+  Future<void> deleteCurrency(String id) {
+    return runFirebase(() async {
+      final reference = _currencies.doc(id);
+      final snapshot = await reference.get();
+      if (!snapshot.exists || snapshot.data() == null) {
+        throw const FirebaseServiceException(
+          'The currency was not found.',
+          code: 'not-found',
+        );
+      }
+      if (snapshot.data()!['isBaseCurrency'] == true) {
+        throw const FirebaseServiceException(
+          'The base currency cannot be deleted.',
+          code: 'failed-precondition',
+        );
+      }
+      final ratesSnapshot = await _db
+          .collection('exchange_rates')
+          .where('currencyId', isEqualTo: id)
+          .get();
+      final batch = _db.batch();
+      for (final doc in ratesSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      batch.delete(reference);
+      await batch.commit();
+    }, 'Could not delete the currency. Please try again.');
+  }
+
   Future<Currency> setBaseCurrency(String id) {
     return runFirebase(() async {
       final snapshot = await _currencies.get();

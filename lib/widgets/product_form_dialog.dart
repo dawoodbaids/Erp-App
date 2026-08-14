@@ -8,7 +8,6 @@ import 'package:image_picker/image_picker.dart';
 import '../controllers/product_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../core/utils/product_image.dart';
-import '../models/currency.dart';
 import '../models/product.dart';
 import 'barcode_dialog.dart';
 
@@ -186,6 +185,8 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     final controller = Get.find<ProductController>();
+    final settings = Get.find<SettingsController>();
+    final selectedCurrency = settings.currencyById(_currencyId);
     final draft = Product(
       id: widget.product?.id ?? '',
       name: _nameController.text.trim(),
@@ -194,6 +195,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       price: double.parse(_priceController.text),
       taxRate: double.parse(_taxRateController.text),
       currencyId: _currencyId,
+      currencyCode: selectedCurrency?.code ?? _currencyId,
       isActive: _isActive,
     );
 
@@ -258,9 +260,10 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
               TextFormField(
                 controller: _barcodeController,
                 validator: _validateBarcode,
-                keyboardType: TextInputType.number,
+                keyboardType: TextInputType.text,
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                  FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
+                  LengthLimitingTextInputFormatter(64),
                 ],
                 decoration: InputDecoration(
                   labelText: 'productForm.barcode'.tr,
@@ -329,9 +332,15 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                   );
                 }
 
-                return DropdownButtonFormField<Currency>(
+                final resolved = settings.currencyById(effectiveId);
+                // Value is the stable document ID so list reloads keep the
+                // selection valid; null when the saved currency no longer
+                // exists in the configured currencies.
+                final value = resolved?.id;
+
+                return DropdownButtonFormField<String>(
                   key: ValueKey('product-currency-$effectiveId'),
-                  initialValue: settings.currencyById(effectiveId),
+                  initialValue: value,
                   isExpanded: true,
                   validator: (value) =>
                       value == null ? 'productForm.currencyRequired'.tr : null,
@@ -340,10 +349,11 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                     prefixIcon: const Icon(Icons.currency_exchange),
                   ),
                   items: currencies
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c.code)))
+                      .map((c) => DropdownMenuItem(
+                          value: c.id, child: Text(c.displayLabel)))
                       .toList(),
                   onChanged: (value) {
-                    if (value != null) setState(() => _currencyId = value.id);
+                    if (value != null) setState(() => _currencyId = value);
                   },
                 );
               }),

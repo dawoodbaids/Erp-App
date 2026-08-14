@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/settings_controller.dart';
-import '../models/currency.dart';
 import '../models/customer.dart';
 
 class CustomerFormData {
@@ -191,19 +190,25 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
                 );
               }
 
-              return DropdownButtonFormField<Currency>(
+              final resolved = settings.currencyById(effectiveId);
+              // Value is the stable document ID so list reloads keep the
+              // selection valid; null when the saved currency no longer exists.
+              final value = resolved?.id;
+
+              return DropdownButtonFormField<String>(
                 key: ValueKey('customer-currency-$effectiveId'),
-                initialValue: settings.currencyById(effectiveId),
+                initialValue: value,
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: 'form.currency'.tr,
                   prefixIcon: const Icon(Icons.currency_exchange),
                 ),
                 items: currencies
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c.code)))
+                    .map((c) => DropdownMenuItem(
+                        value: c.id, child: Text(c.displayLabel)))
                     .toList(),
                 onChanged: (value) {
-                  if (value != null) setState(() => _currencyId = value.id);
+                  if (value != null) setState(() => _currencyId = value);
                 },
               );
             }),

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../controllers/invoice_controller.dart';
+import '../../controllers/settings_controller.dart';
 import '../../controllers/shell_controller.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
@@ -251,13 +252,17 @@ class _SalesHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Text(
-            '${Formatters.amount(summary.totalSales)} ${summary.baseCurrencyCode}',
-            style: theme.textTheme.headlineMedium?.copyWith(
-              color: AppColors.onPrimary,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          Obx(() {
+            final code =
+                Get.find<SettingsController>().defaultCurrency?.code ?? '';
+            return Text(
+              '${Formatters.amount(summary.totalSales)} $code',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                color: AppColors.onPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            );
+          }),
           const SizedBox(height: 8),
           Text(
             'dashboard.subtitle'.tr,
@@ -333,7 +338,7 @@ class _SummaryGrid extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        mainAxisExtent: 112,
+       mainAxisExtent: 122,
       ),
       itemBuilder: (_, index) {
         final card = cards[index];

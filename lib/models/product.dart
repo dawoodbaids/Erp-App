@@ -10,6 +10,13 @@ class Product {
   final double price;
   final double taxRate;
   final String currencyId;
+
+  /// Code of the currency [price] is stored in (e.g. "JOD"). Stored
+  /// alongside [currencyId] so prices always keep their original currency.
+  /// Empty for products created before this field existed; the UI resolves
+  /// the code from the currency document in that case.
+  final String currencyCode;
+
   final bool isActive;
 
   const Product({
@@ -20,6 +27,7 @@ class Product {
     required this.price,
     required this.taxRate,
     required this.currencyId,
+    this.currencyCode = '',
     this.isActive = true,
   });
 
@@ -32,6 +40,7 @@ class Product {
       price: firestoreDouble(data['price']),
       taxRate: firestoreDouble(data['taxRate']),
       currencyId: firestoreString(data['currencyId']),
+      currencyCode: firestoreString(data['currencyCode']),
       isActive: data.containsKey('isActive')
           ? firestoreBool(data['isActive'])
           : true,
@@ -45,6 +54,7 @@ class Product {
     'price': price,
     'taxRate': taxRate,
     'currencyId': currencyId,
+    'currencyCode': currencyCode,
     'isActive': isActive,
   };
 
@@ -55,6 +65,7 @@ class Product {
     double? price,
     double? taxRate,
     String? currencyId,
+    String? currencyCode,
     bool? isActive,
   }) {
     return Product(
@@ -65,6 +76,7 @@ class Product {
       price: price ?? this.price,
       taxRate: taxRate ?? this.taxRate,
       currencyId: currencyId ?? this.currencyId,
+      currencyCode: currencyCode ?? this.currencyCode,
       isActive: isActive ?? this.isActive,
     );
   }

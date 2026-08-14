@@ -10,5 +10,6 @@ class AppRoutes {
   static const String productDetails = '/product-details';
   static const String currencies = '/currencies';
   static const String exchangeRates = '/exchange-rates';
+  static const String taxes = '/taxes';
   static const String language = '/language';
 }

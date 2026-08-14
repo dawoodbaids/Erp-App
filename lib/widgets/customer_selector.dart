@@ -17,26 +17,61 @@ class CustomerSelector extends StatelessWidget {
     return GetX<CreateInvoiceController>(
       builder: (controller) {
         final customers = controller.customers;
-        final selected = controller.selectedCustomer.value;
+        final selectedId = controller.selectedCustomerId.value;
+
+        // Deduplicate by Firebase document ID so a repeated document never
+        // produces duplicate dropdown items (identity equality would also
+        // break the value lookup below).
+        final uniqueById = <String, Customer>{};
+        for (final customer in customers) {
+          uniqueById.putIfAbsent(customer.id, () => customer);
+        }
+        final items = uniqueById.values
+            .map(
+              (customer) => DropdownMenuItem<String>(
+                value: customer.id,
+                child: Text(customer.name),
+              ),
+            )
+            .toList();
+
+        // Edit mode: keep the saved customer visible even when it was removed
+        // from the loaded list, so the value still exists exactly once.
+        final snapshot = controller.selectedCustomerSnapshot;
+        final showSnapshot = selectedId != null &&
+            snapshot != null &&
+            snapshot.id == selectedId &&
+            !uniqueById.containsKey(selectedId);
+        if (showSnapshot) {
+          items.add(
+            DropdownMenuItem<String>(
+              value: snapshot.id,
+              child: Text(snapshot.name),
+            ),
+          );
+        }
+
+        final value = selectedId != null &&
+                (uniqueById.containsKey(selectedId) || showSnapshot)
+            ? selectedId
+            : null;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DropdownButtonFormField<Customer>(
-              key: ValueKey('customer-${selected?.id ?? 'none'}'),
-              initialValue: selected,
+            DropdownButtonFormField<String>(
+              key: ValueKey('customer-$value'),
+              initialValue: value,
               isExpanded: true,
               decoration: InputDecoration(
                 labelText: 'form.customer'.tr,
                 prefixIcon: const Icon(Icons.business_outlined),
               ),
-              items: customers
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
-                  .toList(),
+              items: items,
               onChanged: enabled
-                  ? (value) {
-                      controller.setCustomer(value);
-                      onChanged?.call(value);
+                  ? (id) {
+                      controller.selectCustomerById(id);
+                      onChanged?.call(controller.selectedCustomer);
                     }
                   : null,
             ),
@@ -72,16 +107,12 @@ class CustomerSelector extends StatelessWidget {
       email: draft.email,
       address: draft.address,
       currencyId: draft.currencyId,
+      // Select the newly created customer by its Firebase document ID so the
+      // dropdown value is always a real, stable ID.
+      onCreated: (created) => invoiceController.selectCustomerById(created.id),
     );
     if (error != null) {
       Get.snackbar('form.customerCreateFailed'.tr, error);
-      return;
     }
-
-    final created = customerController.customers.firstWhere(
-      (customer) => customer.name.toLowerCase() == draft.name.toLowerCase(),
-    );
-    invoiceController.setCustomer(created);
-    onChanged?.call(created);
   }
 }

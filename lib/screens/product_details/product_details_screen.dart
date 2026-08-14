@@ -113,50 +113,49 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             );
           }
 
-          final settings = Get.find<SettingsController>();
-          final currency = settings.currencyById(product.currencyId);
-
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
               _HeroCard(product: product),
               const SizedBox(height: 24),
-              AppCard(
-                child: Column(
-                  children: [
-                    AppInfoRow(
-                      label: 'products.barcodeLabel'.tr,
-                      value: product.barcode,
-                      icon: Icons.qr_code_rounded,
+              Builder(
+                builder: (context) {
+                  final settings = Get.find<SettingsController>();
+                  return AppCard(
+                    child: Column(
+                      children: [
+                        AppInfoRow(
+                          label: 'products.barcodeLabel'.tr,
+                          value: product.barcode,
+                          icon: Icons.qr_code_rounded,
+                        ),
+                        AppInfoRow(
+                          label: 'products.priceLabel'.tr,
+                          value: settings.formatProductPrice(product),
+                          icon: Icons.attach_money_rounded,
+                          emphasize: true,
+                        ),
+                        AppInfoRow(
+                          label: 'products.tax'.tr,
+                          value: '${Formatters.rate(product.taxRate)}%',
+                          icon: Icons.percent_rounded,
+                        ),
+                        AppInfoRow(
+                          label: 'products.currency'.tr,
+                          value: settings.productCurrencyCode(product),
+                          icon: Icons.currency_exchange_rounded,
+                        ),
+                        AppInfoRow(
+                          label: 'products.status'.tr,
+                          value: product.isActive
+                              ? 'products.active'.tr
+                              : 'products.inactive'.tr,
+                          icon: Icons.circle_rounded,
+                        ),
+                      ],
                     ),
-                    AppInfoRow(
-                      label: 'products.priceLabel'.tr,
-                      value: Formatters.amountWithCurrency(
-                        currency,
-                        product.price,
-                      ),
-                      icon: Icons.attach_money_rounded,
-                      emphasize: true,
-                    ),
-                    AppInfoRow(
-                      label: 'products.tax'.tr,
-                      value: '${Formatters.rate(product.taxRate)}%',
-                      icon: Icons.percent_rounded,
-                    ),
-                    AppInfoRow(
-                      label: 'products.currency'.tr,
-                      value: currency?.code ?? '',
-                      icon: Icons.currency_exchange_rounded,
-                    ),
-                    AppInfoRow(
-                      label: 'products.status'.tr,
-                      value: product.isActive
-                          ? 'products.active'.tr
-                          : 'products.inactive'.tr,
-                      icon: Icons.circle_rounded,
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 20),
               SizedBox(

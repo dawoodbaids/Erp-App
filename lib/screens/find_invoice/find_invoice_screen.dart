@@ -47,14 +47,9 @@ class _FindInvoiceScreenState extends State<FindInvoiceScreen> {
     Invoice? result;
     String? error;
     final normalized = query.startsWith('#') ? query.substring(1) : query;
-    final number = int.tryParse(normalized);
-    if (number != null) {
-      final lookup = await controller.findByNumber(number);
-      result = lookup.$1;
-      error = lookup.$2;
-    } else {
-      error = 'findInvoice.invalidQuery'.tr;
-    }
+    final lookup = await controller.findByNumber(normalized);
+    result = lookup.$1;
+    error = lookup.$2;
 
     if (!mounted) return;
     setState(() {

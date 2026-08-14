@@ -52,7 +52,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
       body: GetX<ProductController>(
         builder: (controller) {
-          if (controller.errorMessage != null) {
+          if (controller.errorMessage != null &&
+              controller.products.isEmpty) {
             return AppErrorState(
               title: 'products.errorTitle'.tr,
               message: controller.errorMessage!,

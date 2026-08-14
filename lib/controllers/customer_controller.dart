@@ -24,12 +24,16 @@ class CustomerController extends GetxController {
   }
 
   /// Creates a customer in Firestore and adds it to the visible list.
+  /// Returns an error message or null on success. When [onCreated] is given,
+  /// it receives the created customer (with its Firebase document ID) so
+  /// callers can select it by ID.
   Future<String?> createCustomer({
     required String name,
     String? phone,
     String email = '',
     String? address,
     String currencyId = '',
+    void Function(Customer created)? onCreated,
   }) async {
     final normalized = name.trim();
     if (normalized.isEmpty) return 'Customer name is required';
@@ -53,6 +57,7 @@ class CustomerController extends GetxController {
         ),
       );
       customers.add(created);
+      onCreated?.call(created);
       await _refreshDashboard();
       return null;
     } on FirebaseServiceException catch (e) {

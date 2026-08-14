@@ -14,43 +14,51 @@ class CurrencySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = Get.find<SettingsController>();
-    return GetX<CreateInvoiceController>(
-      builder: (controller) {
-        return Obx(() {
-          final currencies = settings.currencies;
-          final selected = controller.selectedCurrency.value;
-          final effectiveId = selected?.id ?? settings.defaultCurrencyId;
+    final controller = Get.find<CreateInvoiceController>();
 
-          if (currencies.isEmpty) {
-            return const SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('No currencies are configured in Firebase yet.'),
-              ),
-            );
-          }
+    return Obx(() {
+      final currencies = settings.currencies;
+      final selected = controller.selectedCurrency.value;
+      final effectiveId = selected?.id ?? settings.defaultCurrencyId;
+      final resolved = settings.currencyById(effectiveId);
 
-          return DropdownButtonFormField<Currency>(
-            key: ValueKey('currency-$effectiveId'),
-            initialValue: settings.currencyById(effectiveId),
-            isExpanded: true,
-            decoration: InputDecoration(
-              labelText: 'form.currency'.tr,
-              prefixIcon: const Icon(Icons.currency_exchange),
+      if (currencies.isEmpty) {
+        return const SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'No currencies are configured in Firebase yet.',
             ),
-            items: currencies
-                .map((c) => DropdownMenuItem(value: c, child: Text(c.code)))
-                .toList(),
-            onChanged: enabled
-                ? (value) {
-                    controller.setCurrency(value);
-                    onChanged?.call(value);
-                  }
-                : null,
-          );
-        });
-      },
-    );
+          ),
+        );
+      }
+
+      // Value is the stable document ID, never the Currency object, so a
+      // list reload with new instances keeps the selection valid.
+      final value = resolved?.id;
+
+      return DropdownButtonFormField<String>(
+        key: ValueKey('currency-$value'),
+        initialValue: value,
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: 'form.currency'.tr,
+          prefixIcon: const Icon(Icons.currency_exchange),
+        ),
+        items: currencies
+            .map((c) =>
+                DropdownMenuItem(value: c.id, child: Text(c.displayLabel)))
+            .toList(),
+        onChanged: enabled
+            ? (id) {
+                if (id == null) return;
+                final currency = settings.currencyById(id);
+                controller.setCurrency(currency);
+                onChanged?.call(currency);
+              }
+            : null,
+      );
+    });
   }
 }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 
 import '../core/utils/currency_converter.dart';
+import '../core/utils/exchange_rate_resolver.dart';
 import '../core/utils/firestore_helpers.dart';
 import '../core/utils/tax_calculator.dart';
 import '../models/currency.dart';
@@ -39,9 +40,10 @@ class InvoiceService {
     }, 'Could not load the invoice. Please try again.');
   }
 
-  /// Searches by the numeric invoice number (e.g. 1, 2, 3). Legacy invoices
-  /// that store their number as a string are matched through a safe scan.
-  Future<Invoice> findByNumber(int number) {
+  /// Searches by the readable invoice number (e.g. `INV-2026-0001`). Legacy
+  /// invoices that store their number as a plain int or a legacy string are
+  /// matched through a safe scan.
+  Future<Invoice> findByNumber(String number) {
     return runFirebase(() async {
       final snapshot = await _invoices
           .where('invoiceNumber', isEqualTo: number)
@@ -51,8 +53,16 @@ class InvoiceService {
         final doc = snapshot.docs.first;
         return Invoice.fromFirestore(doc.id, doc.data());
       }
+      final numeric = int.tryParse(number);
+      final normalized = number.toLowerCase();
       for (final invoice in await _readInvoices()) {
-        if (invoice.invoiceNumber == number) return invoice;
+        if (invoice.invoiceNumber.toLowerCase() == normalized) {
+          return invoice;
+        }
+        if (numeric != null &&
+            firestoreInvoiceNumber(invoice.invoiceNumber) == numeric) {
+          return invoice;
+        }
       }
       _notFound('Invoice');
     }, 'Could not search for the invoice. Please try again.');
@@ -126,6 +136,7 @@ class InvoiceService {
         taxRate,
       );
       final baseCurrency = _baseCurrency(currencies);
+      final subtotal = TaxCalculator.subtotal(invoiceItems);
       final invoice = Invoice(
         id: existing?.id ?? _invoices.doc().id,
         invoiceNumber:
@@ -138,10 +149,21 @@ class InvoiceService {
         taxRate: taxRate,
         taxMode: draft.taxMode,
         status: InvoiceStatus.draft,
+        discountAmount: draft.discountAmount,
         items: List.unmodifiable(invoiceItems),
-        subtotal: TaxCalculator.subtotal(invoiceItems, draft.taxMode),
-        taxAmount: TaxCalculator.tax(invoiceItems, draft.taxMode),
-        totalAmount: TaxCalculator.total(invoiceItems, draft.taxMode),
+        subtotal: subtotal,
+        taxAmount: TaxCalculator.taxAmount(
+          subtotal,
+          draft.discountAmount,
+          taxRate,
+          draft.taxMode,
+        ),
+        totalAmount: TaxCalculator.total(
+          subtotal,
+          draft.discountAmount,
+          taxRate,
+          draft.taxMode,
+        ),
         createdAt: existing?.createdAt ?? DateTime.now(),
       );
 
@@ -208,12 +230,24 @@ class InvoiceService {
   }
 
   Future<Map<String, double>> _readRates() async {
+    final currencies = await _readCurrencies();
+    final codesById = <String, String>{};
+    for (final currency in currencies) {
+      codesById[currency.id] = currency.code.toLowerCase();
+    }
     final snapshot = await _db.collection('exchange_rates').get();
     final rates = <String, double>{};
     for (final doc in snapshot.docs) {
-      rates[firestoreString(doc.data()['currencyId'])] = firestoreDouble(
-        doc.data()['rateToBase'],
-      );
+      final currencyId = firestoreString(doc.data()['currencyId']);
+      if (currencyId.isEmpty) continue;
+      final rate = firestoreDouble(doc.data()['rateToBase']);
+      if (rate <= 0) continue;
+      rates[currencyId] = rate;
+      final code = codesById[currencyId];
+      if (code != null) {
+        rates[code] = rate;
+        rates[currencyId.toLowerCase()] = rate;
+      }
     }
     return rates;
   }
@@ -291,7 +325,8 @@ class InvoiceService {
   }
 
   /// The rate of [currencyId] against the base currency, read from the
-  /// `exchange_rates` collection. Never falls back to 1 silently.
+  /// `exchange_rates` collection. Never falls back to 1 silently. Resolves
+  /// rates stored against the currency document ID or its code.
   double _rateToBase(
     String currencyId,
     List<Currency> currencies,
@@ -299,9 +334,16 @@ class InvoiceService {
   ) {
     final currency = _currencyForId(currencies, currencyId);
     final base = _baseCurrency(currencies);
-    if (currency.id == base.id) return 1;
-    final rate = rates[currencyId] ?? 0;
-    if (rate <= 0) {
+    if (currency.id == base.id ||
+        currency.code.toLowerCase() == base.code.toLowerCase()) {
+      return 1;
+    }
+    final rate = ExchangeRateResolver.rateForCurrencyOrCode(
+      rates,
+      currency.id,
+      currency.code,
+    );
+    if (rate == null) {
       throw FirebaseServiceException(
         'Exchange rate is not available for ${currency.code} → ${base.code}.',
         code: 'failed-precondition',

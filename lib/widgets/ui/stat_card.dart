@@ -27,25 +27,32 @@ class StatCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.all(AppRadius.lg),
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withValues(alpha: isDark ? 0.18 : 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 34,
-            height: 34,
+            Container(
+              width: 40,
+              height: 40,
             decoration: BoxDecoration(
               color: isDark ? color.withValues(alpha: 0.22) : background,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 17, color: color),
+              child: Icon(icon, size: 19, color: color),
           ),
           const Spacer(),
           FittedBox(

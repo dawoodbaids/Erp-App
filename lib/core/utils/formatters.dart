@@ -23,8 +23,8 @@ class Formatters {
   }
 
   static String amountWithCurrency(Currency? currency, double value) {
-    final code = currency?.code ?? '';
-    return code.isEmpty ? amount(value) : '$code ${amount(value)}';
+    final label = currency?.displayLabel ?? '';
+    return label.isEmpty ? amount(value) : '$label ${amount(value)}';
   }
 
   static String quantity(double value) {

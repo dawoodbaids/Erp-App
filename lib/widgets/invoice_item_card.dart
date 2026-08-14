@@ -5,15 +5,12 @@ import 'package:get/get.dart';
 import '../controllers/product_controller.dart';
 import '../core/utils/formatters.dart';
 import '../core/utils/product_image.dart';
-import '../core/utils/tax_calculator.dart';
-import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 import 'ui/app_card.dart';
 
 class InvoiceItemCard extends StatefulWidget {
   final InvoiceItem item;
   final bool editable;
-  final TaxMode taxMode;
   final String currencyCode;
   final ValueChanged<double>? onQuantityChanged;
   final VoidCallback? onRemove;
@@ -22,7 +19,6 @@ class InvoiceItemCard extends StatefulWidget {
     super.key,
     required this.item,
     required this.editable,
-    required this.taxMode,
     this.currencyCode = '',
     this.onQuantityChanged,
     this.onRemove,
@@ -68,7 +64,7 @@ class _InvoiceItemCardState extends State<InvoiceItemCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final lineTotal = TaxCalculator.lineTotal(widget.item, widget.taxMode);
+    final lineTotal = widget.item.lineTotal;
     final showsConversion =
         widget.item.originalCurrencyCode.isNotEmpty &&
         widget.item.originalUnitPrice > 0 &&

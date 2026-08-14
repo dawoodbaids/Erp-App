@@ -6,14 +6,18 @@ import 'ui/app_card.dart';
 
 class InvoiceSummary extends StatelessWidget {
   final double subtotal;
+  final double discount;
   final double tax;
+  final double taxRate;
   final double total;
   final String currencyCode;
 
   const InvoiceSummary({
     super.key,
     required this.subtotal,
+    this.discount = 0,
     required this.tax,
+    this.taxRate = 0,
     required this.total,
     required this.currencyCode,
   });
@@ -31,9 +35,18 @@ class InvoiceSummary extends StatelessWidget {
             label: 'details.subtotal'.tr,
             value: '$currencyCode ${Formatters.amount(subtotal)}',
           ),
+          if (discount > 0) ...[
+            const SizedBox(height: 8),
+            _SummaryRow(
+              label: 'details.discount'.tr,
+              value: '-$currencyCode ${Formatters.amount(discount)}',
+            ),
+          ],
           const SizedBox(height: 8),
           _SummaryRow(
-            label: 'details.tax'.tr,
+            label: taxRate > 0
+                ? '${'details.tax'.tr} (${Formatters.rate(taxRate)}%)'
+                : 'details.tax'.tr,
             value: '$currencyCode ${Formatters.amount(tax)}',
           ),
           const Divider(height: 24),

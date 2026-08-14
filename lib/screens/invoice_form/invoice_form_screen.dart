@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/create_invoice_controller.dart';
@@ -292,26 +293,42 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                   _exchangeRateInfo(context, controller),
                   const SizedBox(height: 16),
                   _taxModeSelector(context, controller),
+                  const SizedBox(height: 16),
+                  _discountField(context, controller),
                   const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: editable ? _scanBarcode : null,
-                          icon: const Icon(Icons.qr_code_scanner),
-                          label: Text('form.scanBarcode'.tr),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton.tonalIcon(
-                          onPressed: editable ? _addProduct : null,
-                          icon: const Icon(Icons.add),
-                          label: Text('form.addProduct'.tr),
-                        ),
-                      ),
-                    ],
-                  ),
+                   LayoutBuilder(
+                     builder: (context, constraints) {
+                       final compact = constraints.maxWidth < 420;
+                       final buttons = [
+                         OutlinedButton.icon(
+                           onPressed: editable ? _scanBarcode : null,
+                           icon: const Icon(Icons.qr_code_scanner),
+                           label: Text('form.scanBarcode'.tr),
+                         ),
+                         FilledButton.tonalIcon(
+                           onPressed: editable ? _addProduct : null,
+                           icon: const Icon(Icons.add),
+                           label: Text('form.addProduct'.tr),
+                         ),
+                       ];
+                       return compact
+                           ? Column(
+                               crossAxisAlignment: CrossAxisAlignment.stretch,
+                               children: [
+                                 buttons[0],
+                                 const SizedBox(height: 10),
+                                 buttons[1],
+                               ],
+                             )
+                           : Row(
+                               children: [
+                                 Expanded(child: buttons[0]),
+                                 const SizedBox(width: 12),
+                                 Expanded(child: buttons[1]),
+                               ],
+                             );
+                     },
+                   ),
                   const SizedBox(height: 16),
                   Text(
                     'form.items'.tr,
@@ -338,7 +355,6 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                         key: ValueKey(item.id),
                         item: item,
                         editable: editable,
-                        taxMode: controller.taxMode.value,
                         currencyCode: currencyCode,
                         onQuantityChanged: (value) =>
                             controller.updateQuantity(item.id, value),
@@ -348,7 +364,9 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                   const SizedBox(height: 16),
                   InvoiceSummary(
                     subtotal: controller.subtotal,
+                    discount: controller.discountAmount.value,
                     tax: controller.tax,
+                    taxRate: controller.taxRate,
                     total: controller.total,
                     currencyCode: currencyCode,
                   ),
@@ -486,13 +504,6 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
 
-    final invoiceNumber = controller.isEditMode
-        ? (Get.find<InvoiceController>()
-                  .byId(controller.editingId)
-                  ?.displayNumber ??
-              '')
-        : Get.find<InvoiceController>().previewInvoiceNumber().toString();
-
     return AppCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -511,12 +522,21 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      invoiceNumber,
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    Obx(() {
+                      final invoiceController = Get.find<InvoiceController>();
+                      final number = controller.isEditMode
+                          ? (invoiceController
+                                    .byId(controller.editingId)
+                                    ?.displayNumber ??
+                                '')
+                          : invoiceController.previewInvoiceNumber();
+                      return Text(
+                        number,
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -556,6 +576,27 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _discountField(
+    BuildContext context,
+    CreateInvoiceController controller,
+  ) {
+    return TextFormField(
+      key: const Key('invoice-discount'),
+      initialValue: controller.discountAmount.value == 0
+          ? ''
+          : Formatters.amount(controller.discountAmount.value),
+      onChanged: (value) =>
+          controller.setDiscount(double.tryParse(value) ?? 0),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+      decoration: InputDecoration(
+        labelText: 'form.discount'.tr,
+        hintText: '0.00',
+        prefixIcon: const Icon(Icons.sell_outlined),
       ),
     );
   }
