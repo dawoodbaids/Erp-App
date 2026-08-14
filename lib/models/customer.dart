@@ -6,6 +6,9 @@ class Customer {
   final String? phone;
   final String email;
   final String? address;
+
+  /// The customer's default currency (document ID from `currencies`).
+  final String currencyId;
   final bool isActive;
   final DateTime? createdAt;
 
@@ -15,6 +18,7 @@ class Customer {
     this.phone,
     this.email = '',
     this.address,
+    this.currencyId = '',
     this.isActive = true,
     this.createdAt,
   });
@@ -26,6 +30,7 @@ class Customer {
       phone: firestoreStringOrNull(data['phone']),
       email: firestoreString(data['email']),
       address: firestoreStringOrNull(data['address']),
+      currencyId: firestoreString(data['currencyId']),
       isActive: data.containsKey('isActive')
           ? firestoreBool(data['isActive'])
           : true,
@@ -38,6 +43,7 @@ class Customer {
     'phone': phone,
     'email': email,
     'address': address,
+    'currencyId': currencyId,
     'isActive': isActive,
   };
 
@@ -46,6 +52,7 @@ class Customer {
     String? phone,
     String? email,
     String? address,
+    String? currencyId,
     bool? isActive,
     DateTime? createdAt,
   }) {
@@ -55,6 +62,7 @@ class Customer {
       phone: phone ?? this.phone,
       email: email ?? this.email,
       address: address ?? this.address,
+      currencyId: currencyId ?? this.currencyId,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );

@@ -142,19 +142,108 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     final createdId = controller.isEditMode
         ? controller.editingId
         : controller.lastCreated.value?.id;
-
-    Get.snackbar(
-      'common.save'.tr,
-      controller.isEditMode
-          ? 'form.successUpdated'.tr
-          : 'form.successCreated'.tr,
-    );
     if (createdId != null && createdId.isNotEmpty) {
-      Get.offNamed(AppRoutes.invoiceDetails, arguments: createdId);
+      final invoice = Get.find<InvoiceController>().byId(createdId);
+      await _showSaveSuccess(createdId, invoice);
     } else {
       Get.offNamed(AppRoutes.shell);
       Get.find<ShellController>().goToInvoices();
     }
+  }
+
+  Future<void> _showSaveSuccess(String id, Invoice? invoice) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        return Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.check_rounded,
+                      size: 38,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    _controller.isEditMode
+                        ? 'form.invoiceUpdatedTitle'.tr
+                        : 'form.invoiceCreatedTitle'.tr,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    invoice?.displayNumber ?? id,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (invoice != null) ...[
+                    const SizedBox(height: 18),
+                    _SuccessMeta(
+                      label: 'form.customer'.tr,
+                      value: invoice.customer.name,
+                    ),
+                    const SizedBox(height: 8),
+                    _SuccessMeta(
+                      label: 'form.total'.tr,
+                      value:
+                          '${invoice.currency.code} ${Formatters.amount(invoice.totalAmount)}',
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(dialogContext).pop();
+                            Get.offNamed(AppRoutes.shell);
+                            Get.find<ShellController>().goToInvoices();
+                          },
+                          child: Text('form.backToInvoices'.tr),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {
+                            Navigator.of(dialogContext).pop();
+                            Get.offNamed(
+                              AppRoutes.invoiceDetails,
+                              arguments: id,
+                            );
+                          },
+                          child: Text('form.viewInvoice'.tr),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -343,37 +432,51 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     final currency = controller.selectedCurrency.value;
     final baseCode = settings.defaultCurrency?.code ?? '';
     final currencyCode = currency?.code ?? baseCode;
+    final missing = controller.isExchangeRateMissing;
+    final showRate =
+        !missing && currency != null && controller.exchangeRate.value > 0;
 
     return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
           Icon(
-            Icons.swap_horiz,
+            missing ? Icons.error_outline : Icons.swap_horiz,
             size: 18,
-            color: theme.colorScheme.onSurfaceVariant,
+            color: missing
+                ? theme.colorScheme.error
+                : theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'form.exchangeRate'.tr,
+              missing
+                  ? 'form.exchangeRateMissing'.trParams({
+                      'from': currencyCode,
+                      'to': baseCode,
+                    })
+                  : 'form.exchangeRate'.tr,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: missing
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
-          Icon(
-            Icons.lock_outline,
-            size: 14,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '1 $currencyCode = ${Formatters.rate(controller.exchangeRate.value)} $baseCode',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w800,
+          if (showRate) ...[
+            Icon(
+              Icons.lock_outline,
+              size: 14,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-          ),
+            const SizedBox(width: 6),
+            Text(
+              '1 $currencyCode = ${Formatters.rate(controller.exchangeRate.value)} $baseCode',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -386,9 +489,9 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     final invoiceNumber = controller.isEditMode
         ? (Get.find<InvoiceController>()
                   .byId(controller.editingId)
-                  ?.invoiceNumber ??
+                  ?.displayNumber ??
               '')
-        : Get.find<InvoiceController>().nextInvoiceNumber();
+        : Get.find<InvoiceController>().previewInvoiceNumber().toString();
 
     return AppCard(
       padding: const EdgeInsets.all(16),
@@ -489,6 +592,33 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
             onSelectionChanged: (selection) {
               controller.setTaxMode(selection.first);
             },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuccessMeta extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _SuccessMeta({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: theme.textTheme.bodySmall),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ],

@@ -108,6 +108,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: AppSectionHeader(
+                    title: 'dashboard.topProducts'.tr,
+                    actionLabel: 'dashboard.viewAll'.tr,
+                    onAction: shell.goToProducts,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const _TopProducts(),
+                const SizedBox(height: 22),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: AppSectionHeader(
                     title: 'dashboard.recentInvoices'.tr,
                     actionLabel: 'dashboard.viewAll'.tr,
                     onAction: shell.goToInvoices,
@@ -682,6 +693,72 @@ class _RecentActivity extends StatelessWidget {
   }
 }
 
+class _TopProducts extends StatelessWidget {
+  const _TopProducts();
+
+  @override
+  Widget build(BuildContext context) {
+    return GetX<InvoiceController>(
+      builder: (invoiceController) {
+        final totals = <String, double>{};
+        final names = <String, String>{};
+        for (final invoice in invoiceController.invoices) {
+          if (invoice.isHidden || invoice.status != InvoiceStatus.approved) {
+            continue;
+          }
+          for (final item in invoice.items) {
+            totals[item.productId] =
+                (totals[item.productId] ?? 0) + item.quantity;
+            names[item.productId] = item.productName;
+          }
+        }
+        final ranked = totals.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        final top = ranked.take(3).toList();
+        if (top.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AppCard(
+              child: Text(
+                'dashboard.noProductSales'.tr,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (var i = 0; i < top.length; i++)
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.primarySoft,
+                      foregroundColor: AppColors.primary,
+                      child: Text('${i + 1}'),
+                    ),
+                    title: Text(
+                      names[top[i].key] ?? top[i].key,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    trailing: Text(
+                      Formatters.quantity(top[i].value),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _ActivityRow extends StatelessWidget {
   final Invoice invoice;
 
@@ -718,7 +795,7 @@ class _ActivityRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${invoice.status.translationKey.tr} · ${invoice.invoiceNumber}',
+                  '${invoice.status.translationKey.tr} · ${invoice.displayNumber}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(

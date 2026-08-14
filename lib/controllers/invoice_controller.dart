@@ -31,7 +31,7 @@ class InvoiceController extends GetxController {
           _statusFilter.value == null || invoice.status == _statusFilter.value;
       if (!matchesStatus) return false;
       if (query.isEmpty) return true;
-      return invoice.invoiceNumber.toLowerCase().contains(query) ||
+      return '${invoice.invoiceNumber}'.contains(query) ||
           invoice.invoiceName.toLowerCase().contains(query) ||
           invoice.customer.name.toLowerCase().contains(query);
     }).toList();
@@ -50,16 +50,14 @@ class InvoiceController extends GetxController {
     return null;
   }
 
-  String nextInvoiceNumber() {
+  /// Preview of the next invoice number based on the loaded invoices. The
+  /// authoritative number is assigned by the Firestore counter when saving.
+  int previewInvoiceNumber() {
     var maxNumber = 0;
     for (final invoice in invoices) {
-      final match = RegExp(r'INV-(\d+)').firstMatch(invoice.invoiceNumber);
-      if (match != null) {
-        final n = int.tryParse(match.group(1)!) ?? 0;
-        if (n > maxNumber) maxNumber = n;
-      }
+      if (invoice.invoiceNumber > maxNumber) maxNumber = invoice.invoiceNumber;
     }
-    return 'INV-${(maxNumber + 1).toString().padLeft(6, '0')}';
+    return maxNumber + 1;
   }
 
   void addInvoice(Invoice invoice) {
@@ -116,9 +114,9 @@ class InvoiceController extends GetxController {
     }
   }
 
-  /// Looks up an invoice by its exact number (e.g. INV-000007). Returns the
+  /// Looks up an invoice by its numeric invoice number (e.g. 7). Returns the
   /// invoice, or null with an error message when not found.
-  Future<(Invoice?, String?)> findByNumber(String number) async {
+  Future<(Invoice?, String?)> findByNumber(int number) async {
     try {
       final invoice = await _invoiceService.findByNumber(number);
       _replaceInvoice(invoice);

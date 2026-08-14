@@ -64,6 +64,7 @@ class CustomerService {
         phone: draft.phone,
         email: draft.email,
         address: draft.address,
+        currencyId: draft.currencyId,
         isActive: draft.isActive,
         createdAt: now,
       );

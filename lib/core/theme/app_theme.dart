@@ -5,20 +5,6 @@ import 'app_colors.dart';
 import 'app_radius.dart';
 
 class AppTheme {
-  static final ThemeData light = _build(
-    brightness: Brightness.light,
-    background: AppColors.scaffoldLight,
-    surface: AppColors.surfaceLight,
-    surfaceRaised: AppColors.surfaceLight,
-    filled: AppColors.fillLight,
-    border: AppColors.borderLight,
-    textPrimary: AppColors.textPrimaryLight,
-    textSecondary: AppColors.textSecondaryLight,
-    textTertiary: AppColors.textTertiaryLight,
-    primary: AppColors.primary,
-    onPrimary: AppColors.onPrimary,
-  );
-
   static final ThemeData dark = _build(
     brightness: Brightness.dark,
     background: AppColors.scaffoldDark,

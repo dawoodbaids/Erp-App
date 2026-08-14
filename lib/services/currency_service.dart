@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/currency.dart';
 import 'firebase_service_exception.dart';
 
+/// Loads the currencies that actually exist in the Firebase `currencies`
+/// collection. Nothing is hardcoded.
 class CurrencyService {
   FirebaseFirestore get _db => FirebaseFirestore.instance;
 
@@ -42,7 +44,9 @@ class CurrencyService {
       final rates = <String, double>{};
       for (final doc in ratesSnapshot.docs) {
         final value = doc.data()['rateToBase'];
-        if (value is num) rates[doc.data()['currencyId']?.toString() ?? ''] = value.toDouble();
+        if (value is num) {
+          rates[doc.data()['currencyId']?.toString() ?? ''] = value.toDouble();
+        }
       }
       final newBaseRate = rates[id] ?? 1.0;
       if (newBaseRate <= 0) {

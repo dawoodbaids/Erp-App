@@ -23,7 +23,7 @@ class InvoiceCard extends StatelessWidget {
     final theme = Theme.of(context);
     final title =
         invoice.invoiceName.isEmpty ||
-            invoice.invoiceName == invoice.invoiceNumber
+            invoice.invoiceName == invoice.displayNumber
         ? 'common.salesInvoice'.tr
         : invoice.invoiceName;
 
@@ -67,7 +67,7 @@ class InvoiceCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      invoice.invoiceNumber,
+                      invoice.displayNumber,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(

@@ -229,7 +229,7 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
                   children: [
                     Text(
                       invoice.invoiceName.isEmpty
-                          ? invoice.invoiceNumber
+                          ? invoice.displayNumber
                           : invoice.invoiceName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -239,7 +239,7 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      invoice.invoiceNumber,
+                      invoice.displayNumber,
                       style: textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
@@ -283,6 +283,13 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
             'details.taxMode'.tr,
             invoice.taxMode.translationKey.tr,
           ),
+          if (invoice.taxRate > 0)
+            _infoRow(
+              context,
+              Icons.percent_outlined,
+              'details.taxRate'.tr,
+              '${Formatters.rate(invoice.taxRate)}%',
+            ),
           if (invoice.approvedAt != null)
             _infoRow(
               context,

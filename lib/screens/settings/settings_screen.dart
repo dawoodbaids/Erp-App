@@ -29,49 +29,6 @@ class SettingsScreen extends StatelessWidget {
     if (confirmed == true) Get.find<AuthController>().logout();
   }
 
-  Future<void> _chooseTheme(
-    BuildContext context,
-    SettingsController controller,
-  ) async {
-    final selected = await showModalBottomSheet<ThemeMode>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  'settings.theme'.tr,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ),
-            _ChoiceTile(
-              icon: Icons.light_mode_outlined,
-              title: 'settings.light'.tr,
-              selected: controller.themeMode == ThemeMode.light,
-              onTap: () => Navigator.of(context).pop(ThemeMode.light),
-            ),
-            _ChoiceTile(
-              icon: Icons.dark_mode_outlined,
-              title: 'settings.dark'.tr,
-              selected: controller.themeMode == ThemeMode.dark,
-              onTap: () => Navigator.of(context).pop(ThemeMode.dark),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-    if (selected != null) controller.setThemeMode(selected);
-  }
-
   Future<void> _chooseCurrency(
     BuildContext context,
     SettingsController controller,
@@ -148,9 +105,6 @@ class SettingsScreen extends StatelessWidget {
           final language = controller.locale.languageCode == 'ar'
               ? 'language.arabic'.tr
               : 'language.english'.tr;
-          final themeLabel = controller.themeMode == ThemeMode.dark
-              ? 'settings.dark'.tr
-              : 'settings.light'.tr;
 
           return RefreshIndicator(
             onRefresh: controller.loadCurrenciesAndRates,
@@ -219,12 +173,6 @@ class SettingsScreen extends StatelessWidget {
                       onTap: () => Get.toNamed(AppRoutes.language),
                     ),
                     const AppDivider(),
-                    AppTile(
-                      icon: Icons.brightness_6_outlined,
-                      title: 'settings.theme'.tr,
-                      subtitle: themeLabel,
-                      onTap: () => _chooseTheme(context, controller),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -235,9 +183,7 @@ class SettingsScreen extends StatelessWidget {
                       icon: Icons.currency_exchange_outlined,
                       title: 'settings.defaultCurrency'.tr,
                       subtitle: 'settings.defaultCurrencySubtitle'.tr,
-                      trailing: _ValuePill(
-                         value: defaultCurrency.code,
-                      ),
+                      trailing: _ValuePill(value: defaultCurrency.code),
                       onTap: () => _chooseCurrency(context, controller),
                     ),
                   ],
@@ -271,7 +217,7 @@ class SettingsScreen extends StatelessWidget {
                       icon: Icons.swap_horiz_rounded,
                       title: 'settings.exchangeRates'.tr,
                       subtitle: 'settings.exchangeRatesSubtitle'.trParams({
-                         'currency': defaultCurrency.code,
+                        'currency': defaultCurrency.code,
                       }),
                       onTap: () => Get.toNamed(AppRoutes.exchangeRates),
                     ),

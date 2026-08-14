@@ -2,39 +2,39 @@ import 'package:flutter/material.dart';
 
 /// Design tokens for RP ERP (Phase 1 redesign).
 ///
-/// A single strong indigo brand color on clean cool neutrals, with a curated
-/// set of semantic status colors. Dark mode uses tuned navy surfaces rather
+/// A confident violet brand on warm neutral surfaces, with a curated
+/// set of semantic status colors. Dark mode uses tuned plum surfaces rather
 /// than a naive inversion of the light palette.
 class AppColors {
   AppColors._();
 
   // Brand
-  static const Color primary = Color(0xFF4A53D1);
-  static const Color primaryPressed = Color(0xFF3A42B5);
+  static const Color primary = Color(0xFF6D28D9);
+  static const Color primaryPressed = Color(0xFF5719B6);
   static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color primarySoft = Color(0xFFE9EBFA);
-  static const Color primarySoftDark = Color(0xFF23284D);
+  static const Color primarySoft = Color(0xFFF0E9FF);
+  static const Color primarySoftDark = Color(0xFF2D1B4D);
 
   // Light neutrals
-  static const Color backgroundLight = Color(0xFFF6F7FB);
+  static const Color backgroundLight = Color(0xFFF8F7FC);
   static const Color surfaceLight = Color(0xFFFFFFFF);
   static const Color textPrimaryLight = Color(0xFF111827);
   static const Color textSecondaryLight = Color(0xFF4B5563);
   static const Color textTertiaryLight = Color(0xFF9CA3AF);
-  static const Color borderLight = Color(0xFFE5E7EB);
-  static const Color fillLight = Color(0xFFF3F4F6);
-  static const Color scaffoldLight = Color(0xFFF6F7FB);
+  static const Color borderLight = Color(0xFFE8E3F0);
+  static const Color fillLight = Color(0xFFF5F2FA);
+  static const Color scaffoldLight = Color(0xFFF8F7FC);
 
   // Dark neutrals
-  static const Color backgroundDark = Color(0xFF0B0F19);
-  static const Color surfaceDark = Color(0xFF121827);
-  static const Color surfaceRaisedDark = Color(0xFF1B2233);
+  static const Color backgroundDark = Color(0xFF120D1A);
+  static const Color surfaceDark = Color(0xFF1B1327);
+  static const Color surfaceRaisedDark = Color(0xFF281A38);
   static const Color textPrimaryDark = Color(0xFFF3F4F6);
   static const Color textSecondaryDark = Color(0xFFA0AAB9);
   static const Color textTertiaryDark = Color(0xFF6B7280);
-  static const Color borderDark = Color(0xFF232B3D);
-  static const Color fillDark = Color(0xFF171F2F);
-  static const Color scaffoldDark = Color(0xFF0B0F19);
+  static const Color borderDark = Color(0xFF3A2A4C);
+  static const Color fillDark = Color(0xFF24182F);
+  static const Color scaffoldDark = Color(0xFF120D1A);
 
   // Status — Draft (warning)
   static const Color draft = Color(0xFFB45309);
@@ -65,7 +65,7 @@ class AppColors {
   static const Color infoSoft = Color(0xFFE0F2F8);
 
   // Misc
-  static const Color subtleBrand = Color(0xFFEEF0FA);
+  static const Color subtleBrand = Color(0xFFF5F0FF);
   static const Color scrim = Color(0x66000000);
   static const List<Color> avatarPalette = [
     primary,
@@ -81,8 +81,8 @@ class AppColors {
   static const Color shadowDark = Color(0x00000000);
 
   // Hero gradient
-  static const Color brandStart = Color(0xFF5B63DB);
-  static const Color brandEnd = Color(0xFF3A42B5);
+  static const Color brandStart = Color(0xFF8B5CF6);
+  static const Color brandEnd = Color(0xFF5B21B6);
   static const Color heroOverlay = Color(0x14FFFFFF);
   static const Color heroOverlayStrong = Color(0x26FFFFFF);
 

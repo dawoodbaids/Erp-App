@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../controllers/settings_controller.dart';
+import '../models/currency.dart';
 import '../models/customer.dart';
 
 class CustomerFormData {
@@ -8,12 +10,14 @@ class CustomerFormData {
   final String? phone;
   final String email;
   final String? address;
+  final String currencyId;
 
   const CustomerFormData({
     required this.name,
     this.phone,
     required this.email,
     this.address,
+    this.currencyId = '',
   });
 }
 
@@ -46,6 +50,7 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
   final _phone = TextEditingController();
   final _email = TextEditingController();
   final _address = TextEditingController();
+  String? _currencyId;
 
   bool get _isEditing => widget.customer != null;
 
@@ -58,6 +63,15 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
       _phone.text = customer.phone ?? '';
       _email.text = customer.email;
       _address.text = customer.address ?? '';
+      _currencyId = customer.currencyId.isNotEmpty
+          ? customer.currencyId
+          : Get.find<SettingsController>().defaultCurrencyId;
+    } else {
+      _currencyId = Get.find<SettingsController>().defaultCurrencyId;
+    }
+    final settings = Get.find<SettingsController>();
+    if (settings.currencies.isEmpty) {
+      settings.ensureCurrenciesLoaded();
     }
   }
 
@@ -72,12 +86,17 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+    final settings = Get.find<SettingsController>();
+    final currencyId = (_currencyId != null && _currencyId!.isNotEmpty)
+        ? _currencyId!
+        : settings.defaultCurrencyId;
     Navigator.of(context).pop(
       CustomerFormData(
         name: _name.text.trim(),
         phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
         email: _email.text.trim(),
         address: _address.text.trim().isEmpty ? null : _address.text.trim(),
+        currencyId: currencyId,
       ),
     );
   }
@@ -86,6 +105,7 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final settings = Get.find<SettingsController>();
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20, 4, 20, bottomInset + 20),
@@ -151,6 +171,42 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
                 prefixIcon: const Icon(Icons.location_on_outlined),
               ),
             ),
+            const SizedBox(height: 12),
+            Obx(() {
+              final currencies = settings.currencies;
+              final effectiveId =
+                  (_currencyId != null && _currencyId!.isNotEmpty)
+                      ? _currencyId!
+                      : settings.defaultCurrencyId;
+
+              if (currencies.isEmpty) {
+                return const SizedBox(
+                  width: double.infinity,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'No currencies are configured in Firebase yet.',
+                    ),
+                  ),
+                );
+              }
+
+              return DropdownButtonFormField<Currency>(
+                key: ValueKey('customer-currency-$effectiveId'),
+                initialValue: settings.currencyById(effectiveId),
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'form.currency'.tr,
+                  prefixIcon: const Icon(Icons.currency_exchange),
+                ),
+                items: currencies
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c.code)))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _currencyId = value.id);
+                },
+              );
+            }),
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
@@ -170,3 +226,4 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
     );
   }
 }
+

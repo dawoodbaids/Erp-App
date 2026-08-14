@@ -29,6 +29,7 @@ class CustomerController extends GetxController {
     String? phone,
     String email = '',
     String? address,
+    String currencyId = '',
   }) async {
     final normalized = name.trim();
     if (normalized.isEmpty) return 'Customer name is required';
@@ -47,6 +48,7 @@ class CustomerController extends GetxController {
           phone: phone?.trim().isEmpty ?? true ? null : phone?.trim(),
           email: email.trim(),
           address: address?.trim().isEmpty ?? true ? null : address?.trim(),
+          currencyId: currencyId,
           createdAt: DateTime.now(),
         ),
       );
@@ -96,6 +98,7 @@ class CustomerController extends GetxController {
           phone: customer.phone,
           email: customer.email.trim(),
           address: customer.address,
+          currencyId: customer.currencyId,
           isActive: customer.isActive,
           createdAt: customer.createdAt,
         ),

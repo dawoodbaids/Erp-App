@@ -1,36 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../core/utils/currency_converter.dart';
+import '../core/utils/exchange_rate_resolver.dart';
 import '../models/currency.dart';
 import '../models/exchange_rate.dart';
+import '../models/tax_rate.dart';
 import '../services/currency_service.dart';
 import '../services/exchange_rate_service.dart';
 import '../services/firebase_service_exception.dart';
+import '../services/tax_service.dart';
 
 class SettingsController extends GetxController {
-  final _themeMode = ThemeMode.light.obs;
   final _locale = const Locale('en').obs;
   final _isLoading = false.obs;
   final _errorMessage = Rxn<String>();
 
   final currencies = <Currency>[].obs;
   final exchangeRates = <ExchangeRate>[].obs;
+  final taxes = <TaxRate>[].obs;
 
   final _currencyService = CurrencyService();
   final _exchangeRateService = ExchangeRateService();
+  final _taxService = TaxService();
 
-  ThemeMode get themeMode => _themeMode.value;
   Locale get locale => _locale.value;
   bool get isLoading => _isLoading.value;
   String? get errorMessage => _errorMessage.value;
 
+  /// The tax rate applied to new invoices, loaded from Firebase. Returns 0
+  /// when no tax configuration exists in Firebase.
+  double get defaultTaxRate => taxes.isEmpty ? 0 : taxes.first.rate;
+
   String get defaultCurrencyId => currencies.isEmpty
       ? ''
-      : currencies.firstWhere(
-          (currency) => currency.isBaseCurrency,
-          orElse: () => currencies.first,
-        ).id;
+      : currencies
+            .firstWhere(
+              (currency) => currency.isBaseCurrency,
+              orElse: () => currencies.first,
+            )
+            .id;
 
   Currency? get defaultCurrency {
     if (currencies.isEmpty) return null;
@@ -40,11 +48,16 @@ class SettingsController extends GetxController {
     );
   }
 
-  void setThemeMode(ThemeMode mode) => _themeMode.value = mode;
-
   void setLocale(Locale locale) {
     _locale.value = locale;
     Get.updateLocale(locale);
+  }
+
+  /// Loads currencies if they are not loaded yet. Safe to call from any form;
+  /// does nothing when a load is already running or the data is present.
+  Future<void> ensureCurrenciesLoaded() async {
+    if (currencies.isNotEmpty || _isLoading.value) return;
+    await loadCurrenciesAndRates();
   }
 
   Future<String?> setDefaultCurrency(String id) async {
@@ -53,8 +66,10 @@ class SettingsController extends GetxController {
       await loadCurrenciesAndRates();
       return null;
     } on FirebaseServiceException catch (error) {
+      debugPrint('Failed to change the base currency: ${error.message}');
       return error.message;
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Failed to change the base currency: $error');
       return 'Could not change the base currency. Please try again.';
     }
   }
@@ -73,19 +88,48 @@ class SettingsController extends GetxController {
     return null;
   }
 
-  double rateFor(String currencyId) {
-    if (currencyId == defaultCurrencyId) return 1;
+  Map<String, double> get _ratesByCurrencyId {
+    final rates = <String, double>{};
     for (final rate in exchangeRates) {
-      if (rate.currencyId == currencyId) return rate.rateToBase;
+      final value = rate.rateToBase;
+      if (value > 0 && rate.currencyId.isNotEmpty) {
+        rates[rate.currencyId] = value;
+      }
     }
-    return 1;
+    return rates;
   }
 
-  double convert(double amount, String fromCurrencyId, String toCurrencyId) {
-    return CurrencyConverter.convert(
+  /// Strict rate lookup. The base currency always returns 1. Returns null
+  /// when the currency is not the base and no exchange rate is configured in
+  /// Firebase. Never invents a rate.
+  double? rateForCurrency(String currencyId) {
+    return ExchangeRateResolver.rateToBase(
+      _ratesByCurrencyId,
+      currencyId,
+      defaultCurrencyId,
+    );
+  }
+
+  /// Strict conversion rate between two currencies from Firebase. Returns 1
+  /// for the same currency and null when a required rate is missing.
+  double? getExchangeRate(String fromCurrencyId, String toCurrencyId) {
+    return ExchangeRateResolver.rateBetween(
+      _ratesByCurrencyId,
+      fromCurrencyId,
+      toCurrencyId,
+      defaultCurrencyId,
+    );
+  }
+
+  /// Converts [amount] using rates from Firebase only. Returns null when a
+  /// required exchange rate is missing so callers never use a made-up rate.
+  double? tryConvert(double amount, String fromCurrencyId, String toCurrencyId) {
+    return ExchangeRateResolver.convertAmount(
       amount,
-      rateFor(fromCurrencyId),
-      rateFor(toCurrencyId),
+      _ratesByCurrencyId,
+      fromCurrencyId,
+      toCurrencyId,
+      defaultCurrencyId,
     );
   }
 
@@ -96,21 +140,41 @@ class SettingsController extends GetxController {
     return null;
   }
 
+  /// Loads currencies, exchange rates and taxes from Firebase. Currencies and
+  /// rates are loaded independently so one failing query never clears the
+  /// others. Failures are logged with the real Firebase error.
   Future<void> loadCurrenciesAndRates() async {
     _isLoading.value = true;
     _errorMessage.value = null;
+
     try {
-      final currencyList = await _currencyService.getCurrencies();
-      final rateList = await _exchangeRateService.getExchangeRates();
-      currencies.value = currencyList;
-      exchangeRates.value = rateList;
+      currencies.value = await _currencyService.getCurrencies();
     } on FirebaseServiceException catch (error) {
+      debugPrint('Failed to load currencies: ${error.message}');
       _errorMessage.value = error.message;
-    } catch (_) {
-      _errorMessage.value = 'Could not load currencies. Please try again.';
-    } finally {
-      _isLoading.value = false;
+    } catch (error) {
+      debugPrint('Failed to load currencies: $error');
+      _errorMessage.value = 'Failed to load currencies. Please try again.';
     }
+
+    try {
+      exchangeRates.value = await _exchangeRateService.getExchangeRates();
+    } on FirebaseServiceException catch (error) {
+      debugPrint('Failed to load exchange rates: ${error.message}');
+      _errorMessage.value ??= error.message;
+    } catch (error) {
+      debugPrint('Failed to load exchange rates: $error');
+    }
+
+    try {
+      taxes.value = await _taxService.getTaxes();
+    } on FirebaseServiceException catch (error) {
+      debugPrint('Failed to load taxes: ${error.message}');
+    } catch (error) {
+      debugPrint('Failed to load taxes: $error');
+    }
+
+    _isLoading.value = false;
   }
 
   Future<String?> updateExchangeRate(String rateId, double newRate) async {
@@ -119,8 +183,10 @@ class SettingsController extends GetxController {
       await loadCurrenciesAndRates();
       return null;
     } on FirebaseServiceException catch (error) {
+      debugPrint('Failed to update the exchange rate: ${error.message}');
       return error.message;
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Failed to update the exchange rate: $error');
       return 'Could not update the exchange rate. Please try again.';
     }
   }

@@ -64,11 +64,14 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       text: product == null ? '' : _number(product.price),
     );
     _taxRateController = TextEditingController(
-      text: product == null ? '' : _number(product.taxRate),
+      text: product == null ? _number(settings.defaultTaxRate) : _number(product.taxRate),
     );
     _image = product?.image;
     _currencyId = product?.currencyId ?? settings.defaultCurrencyId;
     _isActive = product?.isActive ?? true;
+    if (settings.currencies.isEmpty) {
+      settings.ensureCurrenciesLoaded();
+    }
   }
 
   static String _number(double value) {
@@ -308,23 +311,42 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                 ],
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<Currency>(
-                key: ValueKey('currency-$_currencyId'),
-                initialValue: settings.currencyById(_currencyId),
-                isExpanded: true,
-                validator: (value) =>
-                    value == null ? 'productForm.currencyRequired'.tr : null,
-                decoration: InputDecoration(
-                  labelText: 'productForm.currency'.tr,
-                  prefixIcon: const Icon(Icons.currency_exchange),
-                ),
-                items: settings.currencies
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c.code)))
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _currencyId = value.id);
-                },
-              ),
+              Obx(() {
+                final currencies = settings.currencies;
+                final effectiveId = (_currencyId.isNotEmpty)
+                    ? _currencyId
+                    : settings.defaultCurrencyId;
+
+                if (currencies.isEmpty) {
+                  return const SizedBox(
+                    width: double.infinity,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        'No currencies are configured in Firebase yet.',
+                      ),
+                    ),
+                  );
+                }
+
+                return DropdownButtonFormField<Currency>(
+                  key: ValueKey('product-currency-$effectiveId'),
+                  initialValue: settings.currencyById(effectiveId),
+                  isExpanded: true,
+                  validator: (value) =>
+                      value == null ? 'productForm.currencyRequired'.tr : null,
+                  decoration: InputDecoration(
+                    labelText: 'productForm.currency'.tr,
+                    prefixIcon: const Icon(Icons.currency_exchange),
+                  ),
+                  items: currencies
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c.code)))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) setState(() => _currencyId = value.id);
+                  },
+                );
+              }),
               const SizedBox(height: 12),
               Row(
                 children: [

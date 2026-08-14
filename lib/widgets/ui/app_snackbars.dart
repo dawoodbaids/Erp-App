@@ -20,33 +20,23 @@ class AppSnack {
   }
 
   static void _show(String title, String message, Color accent) {
-    final isDark = Get.isDarkMode;
     Get.snackbar(
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isDark ? AppColors.surfaceRaisedDark : Colors.white,
-      colorText: isDark
-          ? AppColors.textPrimaryDark
-          : AppColors.textPrimaryLight,
+      backgroundColor: AppColors.surfaceRaisedDark,
+      colorText: AppColors.textPrimaryDark,
       titleText: Text(
         title,
         style: TextStyle(
-          color: isDark
-              ? AppColors.textPrimaryDark
-              : AppColors.textPrimaryLight,
+          color: AppColors.textPrimaryDark,
           fontWeight: FontWeight.w700,
           fontSize: 14,
         ),
       ),
       messageText: Text(
         message,
-        style: TextStyle(
-          color: isDark
-              ? AppColors.textSecondaryDark
-              : AppColors.textSecondaryLight,
-          fontSize: 13.5,
-        ),
+        style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 13.5),
       ),
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

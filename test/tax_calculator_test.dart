@@ -74,7 +74,7 @@ void main() {
     test('only drafts are editable', () {
       Invoice invoice(InvoiceStatus status) => Invoice(
         id: 'invoice-${status.name}',
-        invoiceNumber: 'INV-${status.name}',
+        invoiceNumber: status.index + 1,
         customer: const Customer(id: 'customer-1', name: 'Test Customer'),
         currency: const Currency(
           id: 'currency-1',

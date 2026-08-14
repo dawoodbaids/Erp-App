@@ -141,16 +141,10 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                   .where((i) => !i.isHidden && i.customer.id == customer.id)
                   .toList()
                 ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          final settings = Get.find<SettingsController>();
           final approvedTotal = invoices.fold<double>(
             0,
             (sum, i) => i.status == InvoiceStatus.approved
-                ? sum +
-                      settings.convert(
-                        i.totalAmount,
-                        i.currency.id,
-                        settings.defaultCurrencyId,
-                      )
+                ? sum + i.totalAmount * i.exchangeRate
                 : sum,
           );
 

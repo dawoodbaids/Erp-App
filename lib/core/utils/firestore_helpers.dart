@@ -26,3 +26,12 @@ DateTime? firestoreDate(Object? value) {
 
 DateTime requiredFirestoreDate(Object? value) =>
     firestoreDate(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+/// Reads a numeric invoice number. New invoices store an int; legacy invoices
+/// store a string such as "INV-000007". Returns the numeric value or 0 when
+/// missing so old documents never crash.
+int firestoreInvoiceNumber(Object? value) {
+  if (value is num) return value.toInt();
+  final match = RegExp(r'(\d+)').firstMatch(value?.toString() ?? '');
+  return match == null ? 0 : int.tryParse(match.group(1)!) ?? 0;
+}

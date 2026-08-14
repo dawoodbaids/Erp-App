@@ -132,6 +132,7 @@ class AuthController extends GetxController {
       final settings = Get.find<SettingsController>();
       settings.currencies.clear();
       settings.exchangeRates.clear();
+      settings.taxes.clear();
     }
     if (Get.isRegistered<CustomerController>()) {
       Get.find<CustomerController>().customers.clear();

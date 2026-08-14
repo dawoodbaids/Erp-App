@@ -46,10 +46,29 @@ class CreateInvoiceController extends GetxController {
   double get tax => TaxCalculator.tax(items, taxMode.value);
   double get total => TaxCalculator.total(items, taxMode.value);
 
+  /// True when the selected invoice currency needs an exchange rate from
+  /// Firebase that is not configured. Saving is blocked in [validate].
+  bool get isExchangeRateMissing {
+    final currency = selectedCurrency.value;
+    if (currency == null) return false;
+    if (currency.id == _settings.defaultCurrencyId) return false;
+    return _settings.rateForCurrency(currency.id) == null;
+  }
+
   @override
   void onInit() {
     super.onInit();
     _reset();
+    ever(_settings.currencies, (_) => _selectDefaultCurrencyIfNone());
+    if (_settings.currencies.isEmpty) {
+      _settings.ensureCurrenciesLoaded();
+    }
+  }
+
+  void _selectDefaultCurrencyIfNone() {
+    if (selectedCurrency.value != null) return;
+    final defaultCurrency = _settings.defaultCurrency;
+    if (defaultCurrency != null) setCurrency(defaultCurrency);
   }
 
   void _reset() {
@@ -58,7 +77,7 @@ class CreateInvoiceController extends GetxController {
     _isSaving.value = false;
     selectedCustomer.value = null;
     selectedCurrency.value = _settings.defaultCurrency;
-    exchangeRate.value = _settings.rateFor(_settings.defaultCurrencyId);
+    exchangeRate.value = _settings.rateForCurrency(_settings.defaultCurrencyId) ?? 0;
     taxMode.value = TaxMode.exclusive;
     items.value = [];
     invoiceName.value = '';
@@ -79,12 +98,21 @@ class CreateInvoiceController extends GetxController {
     invoiceName.value = invoice.invoiceName;
   }
 
-  void setCustomer(Customer? customer) => selectedCustomer.value = customer;
+  void setCustomer(Customer? customer) {
+    selectedCustomer.value = customer;
+    if (customer != null && customer.currencyId.isNotEmpty) {
+      final currency = _settings.currencyById(customer.currencyId);
+      if (currency != null) setCurrency(currency);
+    }
+  }
 
   void setCurrency(Currency? currency) {
     selectedCurrency.value = currency;
-    if (currency != null) {
-      exchangeRate.value = _settings.rateFor(currency.id);
+    if (currency == null) {
+      exchangeRate.value = 0;
+    } else {
+      exchangeRate.value =
+          _settings.rateForCurrency(currency.id) ?? 0;
     }
     _recalculateItems();
   }
@@ -93,7 +121,8 @@ class CreateInvoiceController extends GetxController {
 
   void setInvoiceName(String value) => invoiceName.value = value;
 
-  /// Converts each item into the selected invoice currency for the UI preview.
+  /// Converts each item into the selected invoice currency for the UI preview
+  /// using exchange rates from Firebase only.
   void _recalculateItems() {
     final invoiceCurrencyId = selectedCurrency.value?.id;
     if (invoiceCurrencyId == null) return;
@@ -102,11 +131,12 @@ class CreateInvoiceController extends GetxController {
       items.map(
         (item) => _withLineTotal(
           item.copyWith(
-            unitPrice: _settings.convert(
-              item.originalUnitPrice,
-              item.originalCurrencyId,
-              invoiceCurrencyId,
-            ),
+            unitPrice: _settings.tryConvert(
+                  item.originalUnitPrice,
+                  item.originalCurrencyId,
+                  invoiceCurrencyId,
+                ) ??
+                item.originalUnitPrice,
           ),
         ),
       ),
@@ -140,12 +170,13 @@ class CreateInvoiceController extends GetxController {
         originalCurrencyId: product.currencyId,
         originalCurrencyCode: originalCurrency?.code ?? '',
         quantity: 1,
-        unitPrice: _settings.convert(
-          product.price,
-          product.currencyId,
-          invoiceCurrencyId,
-        ),
-        taxRate: product.taxRate,
+        unitPrice: _settings.tryConvert(
+              product.price,
+              product.currencyId,
+              invoiceCurrencyId,
+            ) ??
+            product.price,
+        taxRate: _settings.defaultTaxRate,
         lineTotal: 0,
       );
       items.add(_withLineTotal(item));
@@ -211,6 +242,12 @@ class CreateInvoiceController extends GetxController {
     if (selectedCurrency.value!.id.isEmpty) {
       return 'The selected currency is invalid';
     }
+    if (isExchangeRateMissing) {
+      final currency = selectedCurrency.value!;
+      final base = _settings.defaultCurrency;
+      return 'Exchange rate is not available for '
+          '${currency.code} → ${base?.code ?? ''}.';
+    }
     if (items.isEmpty) return 'Add at least one item to the invoice';
     for (final item in items) {
       if (item.productId.isEmpty) {
@@ -243,6 +280,7 @@ class CreateInvoiceController extends GetxController {
           customer: selectedCustomer.value!,
           currency: selectedCurrency.value!,
           exchangeRate: exchangeRate.value,
+          taxRate: existing.taxRate,
           taxMode: taxMode.value,
           status: InvoiceStatus.draft,
           items: List.unmodifiable(items),
@@ -259,11 +297,12 @@ class CreateInvoiceController extends GetxController {
 
       final invoice = Invoice(
         id: '',
-        invoiceNumber: '',
+        invoiceNumber: 0,
         invoiceName: invoiceName.value.trim(),
         customer: selectedCustomer.value!,
         currency: selectedCurrency.value!,
         exchangeRate: exchangeRate.value,
+        taxRate: _settings.defaultTaxRate,
         taxMode: taxMode.value,
         status: InvoiceStatus.draft,
         items: List.unmodifiable(items),

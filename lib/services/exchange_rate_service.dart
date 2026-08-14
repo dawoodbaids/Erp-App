@@ -1,20 +1,83 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/utils/exchange_rate_resolver.dart';
+import '../core/utils/firestore_helpers.dart';
 import '../models/exchange_rate.dart';
 import 'firebase_service_exception.dart';
 
+/// Reads exchange rates from the Firebase `exchange_rates` collection.
+///
+/// Structure: one document per currency with `currencyId` (the `currencies`
+/// document ID) and `rateToBase` (units of the base currency per 1 unit of
+/// this currency). Rates are never hardcoded.
 class ExchangeRateService {
   FirebaseFirestore get _db => FirebaseFirestore.instance;
 
+  CollectionReference<Map<String, dynamic>> get _rates =>
+      _db.collection('exchange_rates');
+
+  CollectionReference<Map<String, dynamic>> get _currencies =>
+      _db.collection('currencies');
+
   Future<List<ExchangeRate>> getExchangeRates() {
     return runFirebase(() async {
-      final snapshot = await _db.collection('exchange_rates').get();
+      final snapshot = await _rates.get();
       final rates = snapshot.docs
           .map((doc) => ExchangeRate.fromFirestore(doc.id, doc.data()))
           .toList();
       rates.sort((a, b) => a.currencyId.compareTo(b.currencyId));
       return rates;
     }, 'Could not load exchange rates. Please try again.');
+  }
+
+  /// Resolves the conversion rate between two currencies directly from
+  /// Firebase.
+  ///
+  /// - Same currency returns 1.
+  /// - Otherwise both currencies need a valid `rateToBase` (or be the base
+  ///   currency), else null. Inverse directions are handled by the
+  ///   rateToBase formula and are never guessed.
+  Future<double?> getExchangeRate(
+    String fromCurrencyId,
+    String toCurrencyId,
+  ) {
+    return runFirebase(() async {
+      if (fromCurrencyId.isEmpty || toCurrencyId.isEmpty) return null;
+      if (fromCurrencyId == toCurrencyId) return 1;
+
+      final currenciesSnapshot = await _currencies.get();
+      String baseCurrencyId = '';
+      for (final doc in currenciesSnapshot.docs) {
+        if (firestoreBool(doc.data()['isBaseCurrency'])) {
+          baseCurrencyId = doc.id;
+          break;
+        }
+      }
+      if (baseCurrencyId.isEmpty) {
+        if (currenciesSnapshot.docs.isNotEmpty) {
+          baseCurrencyId = currenciesSnapshot.docs.first.id;
+        } else {
+          return null;
+        }
+      }
+
+      final ratesSnapshot = await _rates.get();
+      final rates = <String, double>{};
+      for (final doc in ratesSnapshot.docs) {
+        final data = doc.data();
+        final currencyId = firestoreString(data['currencyId']);
+        if (currencyId.isEmpty) continue;
+        final rate = firestoreDouble(data['rateToBase']);
+        if (rate > 0) rates[currencyId] = rate;
+      }
+
+      return ExchangeRateResolver.rateBetween(
+        rates,
+        fromCurrencyId,
+        toCurrencyId,
+        baseCurrencyId,
+      );
+    }, 'Could not load the exchange rate. Please try again.');
   }
 
   Future<ExchangeRate> updateRate(String id, double rate) {
@@ -25,7 +88,7 @@ class ExchangeRateService {
           code: 'invalid-argument',
         );
       }
-      final reference = _db.collection('exchange_rates').doc(id);
+      final reference = _rates.doc(id);
       final snapshot = await reference.get();
       if (!snapshot.exists || snapshot.data() == null) {
         throw const FirebaseServiceException(
@@ -34,7 +97,7 @@ class ExchangeRateService {
         );
       }
       final currencyId = snapshot.data()!['currencyId']?.toString() ?? '';
-      final currency = await _db.collection('currencies').doc(currencyId).get();
+      final currency = await _currencies.doc(currencyId).get();
       if (currency.data()?['isBaseCurrency'] == true) {
         throw const FirebaseServiceException(
           'The base currency rate cannot be changed.',

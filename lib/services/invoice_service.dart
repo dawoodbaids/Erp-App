@@ -10,12 +10,17 @@ import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 import '../models/product.dart';
 import 'firebase_service_exception.dart';
+import 'invoice_number_service.dart';
+import 'tax_service.dart';
 
 class InvoiceService {
   FirebaseFirestore get _db => FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> get _invoices =>
       _db.collection('invoices');
+
+  final _invoiceNumberService = InvoiceNumberService();
+  final _taxService = TaxService();
 
   Future<List<Invoice>> getInvoices() {
     return runFirebase(
@@ -34,15 +39,22 @@ class InvoiceService {
     }, 'Could not load the invoice. Please try again.');
   }
 
-  Future<Invoice> findByNumber(String number) {
+  /// Searches by the numeric invoice number (e.g. 1, 2, 3). Legacy invoices
+  /// that store their number as a string are matched through a safe scan.
+  Future<Invoice> findByNumber(int number) {
     return runFirebase(() async {
       final snapshot = await _invoices
           .where('invoiceNumber', isEqualTo: number)
           .limit(1)
           .get();
-      if (snapshot.docs.isEmpty) _notFound('Invoice');
-      final doc = snapshot.docs.first;
-      return Invoice.fromFirestore(doc.id, doc.data());
+      if (snapshot.docs.isNotEmpty) {
+        final doc = snapshot.docs.first;
+        return Invoice.fromFirestore(doc.id, doc.data());
+      }
+      for (final invoice in await _readInvoices()) {
+        if (invoice.invoiceNumber == number) return invoice;
+      }
+      _notFound('Invoice');
     }, 'Could not search for the invoice. Please try again.');
   }
 
@@ -104,22 +116,26 @@ class InvoiceService {
       final currency = await _currency(draft.currency.id);
       final currencies = await _readCurrencies();
       final rates = await _readRates();
+      final taxRate = await _taxService.getDefaultTaxRate();
       final invoiceItems = await _buildItems(
         draft.items,
         draft.taxMode,
         currency.id,
         currencies,
         rates,
+        taxRate,
       );
       final baseCurrency = _baseCurrency(currencies);
       final invoice = Invoice(
         id: existing?.id ?? _invoices.doc().id,
-        invoiceNumber: existing?.invoiceNumber ?? await _nextInvoiceNumber(),
+        invoiceNumber:
+            existing?.invoiceNumber ?? await _invoiceNumberService.next(),
         invoiceName: draft.invoiceName.trim(),
         customer: customer,
         currency: currency,
         baseCurrencyCode: baseCurrency.code,
-        exchangeRate: _rateFor(currency.id, currencies, rates),
+        exchangeRate: _rateToBase(currency.id, currencies, rates),
+        taxRate: taxRate,
         taxMode: draft.taxMode,
         status: InvoiceStatus.draft,
         items: List.unmodifiable(invoiceItems),
@@ -150,9 +166,8 @@ class InvoiceService {
       if (!snapshot.exists || snapshot.data() == null) _notFound('Invoice');
       final invoice = Invoice.fromFirestore(snapshot.id, snapshot.data()!);
       if (!invoice.isEditable) {
-        final statusLabel = status == InvoiceStatus.approved
-            ? 'approved'
-            : 'cancelled';
+        final statusLabel =
+            status == InvoiceStatus.approved ? 'approved' : 'cancelled';
         throw FirebaseServiceException(
           'Only draft invoices can be $statusLabel.',
           code: 'failed-precondition',
@@ -221,6 +236,7 @@ class InvoiceService {
     String invoiceCurrencyId,
     List<Currency> currencies,
     Map<String, double> rates,
+    double taxRate,
   ) async {
     final items = <InvoiceItem>[];
     for (var index = 0; index < drafts.length; index++) {
@@ -248,7 +264,7 @@ class InvoiceService {
           currencies,
           rates,
         ),
-        taxRate: product.taxRate,
+        taxRate: taxRate,
         lineTotal: 0,
       );
       items.add(
@@ -265,34 +281,29 @@ class InvoiceService {
     List<Currency> currencies,
     Map<String, double> rates,
   ) {
+    if (from == to) return amount;
     final result = CurrencyConverter.convert(
       amount,
-      _rateFor(from, currencies, rates),
-      _rateFor(to, currencies, rates),
+      _rateToBase(from, currencies, rates),
+      _rateToBase(to, currencies, rates),
     );
     return (result * 100).round() / 100;
   }
 
-  double _rateFor(
+  /// The rate of [currencyId] against the base currency, read from the
+  /// `exchange_rates` collection. Never falls back to 1 silently.
+  double _rateToBase(
     String currencyId,
     List<Currency> currencies,
     Map<String, double> rates,
   ) {
-    if (currencies.isEmpty) {
-      throw const FirebaseServiceException(
-        'No active currencies are configured.',
-        code: 'failed-precondition',
-      );
-    }
-    final base = currencies.firstWhere(
-      (currency) => currency.isBaseCurrency,
-      orElse: () => currencies.first,
-    );
-    if (currencyId == base.id) return 1;
+    final currency = _currencyForId(currencies, currencyId);
+    final base = _baseCurrency(currencies);
+    if (currency.id == base.id) return 1;
     final rate = rates[currencyId] ?? 0;
     if (rate <= 0) {
-      throw const FirebaseServiceException(
-        'An exchange rate is missing for one of the selected currencies.',
+      throw FirebaseServiceException(
+        'Exchange rate is not available for ${currency.code} → ${base.code}.',
         code: 'failed-precondition',
       );
     }
@@ -317,17 +328,6 @@ class InvoiceService {
       'A base currency is not configured.',
       code: 'failed-precondition',
     );
-  }
-
-  Future<String> _nextInvoiceNumber() async {
-    final invoices = await _readInvoices();
-    var maxNumber = 0;
-    for (final invoice in invoices) {
-      final match = RegExp(r'INV-(\d+)').firstMatch(invoice.invoiceNumber);
-      final value = int.tryParse(match?.group(1) ?? '') ?? 0;
-      if (value > maxNumber) maxNumber = value;
-    }
-    return 'INV-${(maxNumber + 1).toString().padLeft(6, '0')}';
   }
 
   Never _notFound(String type) =>

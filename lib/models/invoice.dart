@@ -53,13 +53,19 @@ TaxMode parseTaxMode(String value) =>
 
 class Invoice {
   final String id;
-  final String invoiceNumber;
+
+  /// Sequential, numeric-only invoice number (1, 2, 3, ...). The Firebase
+  /// document ID is stored separately in [id] and never shown to users.
+  final int invoiceNumber;
   final String invoiceName;
   final bool isHidden;
   final Customer customer;
   final Currency currency;
   final String baseCurrencyCode;
   final double exchangeRate;
+
+  /// The tax rate (from Firebase) used when the invoice was created.
+  final double taxRate;
   final TaxMode taxMode;
   final InvoiceStatus status;
   final List<InvoiceItem> items;
@@ -79,6 +85,7 @@ class Invoice {
     required this.currency,
     this.baseCurrencyCode = '',
     required this.exchangeRate,
+    this.taxRate = 0,
     required this.taxMode,
     required this.status,
     required this.items,
@@ -89,6 +96,9 @@ class Invoice {
     this.approvedAt,
     this.cancelledAt,
   });
+
+  /// Human-readable number shown in the UI, e.g. `#1`.
+  String get displayNumber => '#$invoiceNumber';
 
   factory Invoice.fromFirestore(String id, Map<String, dynamic> data) {
     final items = (data['items'] as List?)
@@ -104,7 +114,7 @@ class Invoice {
         const <InvoiceItem>[];
     return Invoice(
       id: id,
-      invoiceNumber: firestoreString(data['invoiceNumber']),
+      invoiceNumber: firestoreInvoiceNumber(data['invoiceNumber']),
       invoiceName: firestoreString(data['invoiceName']),
       isHidden: firestoreBool(data['isHidden']),
       customer: Customer(
@@ -119,6 +129,7 @@ class Invoice {
       ),
       baseCurrencyCode: firestoreString(data['baseCurrencyCode']),
       exchangeRate: firestoreDouble(data['exchangeRate']),
+      taxRate: firestoreDouble(data['taxRate']),
       taxMode: parseTaxMode(firestoreString(data['taxMode'])),
       status: parseInvoiceStatus(firestoreString(data['status'])),
       items: items,
@@ -143,6 +154,7 @@ class Invoice {
     'currencySymbol': currency.symbol,
     'baseCurrencyCode': baseCurrencyCode,
     'exchangeRate': exchangeRate,
+    'taxRate': taxRate,
     'taxMode': taxMode == TaxMode.inclusive ? 'Inclusive' : 'Exclusive',
     'status': status.label,
     'items': items.map((item) => item.toFirestore()).toList(),
@@ -162,6 +174,7 @@ class Invoice {
     Customer? customer,
     Currency? currency,
     double? exchangeRate,
+    double? taxRate,
     TaxMode? taxMode,
     InvoiceStatus? status,
     List<InvoiceItem>? items,
@@ -180,6 +193,7 @@ class Invoice {
       currency: currency ?? this.currency,
       baseCurrencyCode: baseCurrencyCode,
       exchangeRate: exchangeRate ?? this.exchangeRate,
+      taxRate: taxRate ?? this.taxRate,
       taxMode: taxMode ?? this.taxMode,
       status: status ?? this.status,
       items: items ?? this.items,

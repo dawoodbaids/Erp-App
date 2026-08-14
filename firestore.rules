@@ -28,6 +28,14 @@ service cloud.firestore {
       allow read, write: if signedIn();
     }
 
+    match /taxes/{taxId} {
+      allow read, write: if signedIn();
+    }
+
+    match /settings/{settingId} {
+      allow read, write: if signedIn();
+    }
+
     match /invoices/{invoiceId} {
       allow read, write: if signedIn();
     }

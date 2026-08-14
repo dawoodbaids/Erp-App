@@ -11,9 +11,9 @@ Widget buildProductImage(
 }) {
   final theme = context == null ? null : Theme.of(context);
   final placeholderBackground =
-      theme?.colorScheme.surfaceContainerHigh ?? AppColors.fillLight;
+      theme?.colorScheme.surfaceContainerHigh ?? AppColors.fillDark;
   final placeholderForeground =
-      theme?.colorScheme.onSurfaceVariant ?? AppColors.textSecondaryLight;
+      theme?.colorScheme.onSurfaceVariant ?? AppColors.textSecondaryDark;
   final placeholder = ClipRRect(
     borderRadius: BorderRadius.circular(AppRadius.sm),
     child: Container(

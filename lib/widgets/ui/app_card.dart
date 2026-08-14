@@ -37,15 +37,15 @@ class AppCard extends StatelessWidget {
       border: Border.all(
         color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
       ),
-      boxShadow: isDark
-          ? null
-          : [
-              BoxShadow(
-                color: AppColors.shadowLight.withValues(alpha: 0.45),
-                blurRadius: 16,
-                offset: const Offset(0, 5),
-              ),
-            ],
+      boxShadow: [
+        BoxShadow(
+          color: isDark
+              ? Colors.black.withValues(alpha: 0.28)
+              : AppColors.shadowLight.withValues(alpha: 0.45),
+          blurRadius: isDark ? 14 : 16,
+          offset: const Offset(0, 5),
+        ),
+      ],
     );
 
     final content = padded

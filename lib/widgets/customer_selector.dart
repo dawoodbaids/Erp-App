@@ -71,6 +71,7 @@ class CustomerSelector extends StatelessWidget {
       phone: draft.phone,
       email: draft.email,
       address: draft.address,
+      currencyId: draft.currencyId,
     );
     if (error != null) {
       Get.snackbar('form.customerCreateFailed'.tr, error);

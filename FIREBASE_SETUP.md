@@ -45,6 +45,23 @@ authenticated user's UID in `createdBy`.
 - `rateToBase` number
 - `effectiveDate` timestamp
 
+`taxes/{taxId}`
+
+- `name` string
+- `rate` number
+- `isActive` boolean
+
+The first active tax document is used as the default tax rate for new
+products and invoices.
+
+`settings/invoice_counter`
+
+- `lastInvoiceNumber` number
+
+This document is used as a counter for sequential invoice numbers. The app
+creates it on first use and seeds it above the highest existing invoice
+number to avoid duplicates.
+
 `customers/{customerId}`
 
 - `name` string
@@ -52,6 +69,7 @@ authenticated user's UID in `createdBy`.
 - `phone` string or null
 - `email` string
 - `address` string or null
+- `currencyId` string (default currency used for new invoices)
 - `isActive` boolean
 - `createdAt` timestamp
 - `updatedAt` timestamp
@@ -74,12 +92,13 @@ existing `imageUrl` value can still be displayed when present.
 `invoices/{invoiceId}` stores the customer and currency snapshot plus an
 `items` array. It contains:
 
-- `invoiceNumber` string
+- `invoiceNumber` number (sequential; displayed as `#1`, `#2`, …)
 - `invoiceName` string
 - `customerId` and `customerName`
 - `currencyId`, `currencyCode`, `currencyName`, and `currencySymbol`
 - `items` array of product snapshots
 - `subtotal`, `taxAmount`, and `totalAmount` numbers
+- `taxRate` number (global tax applied to the invoice)
 - `taxMode`, `status`, and `isHidden`
 - `baseCurrencyCode` and `exchangeRate`
 - `createdAt`, `updatedAt`, and `createdBy`
