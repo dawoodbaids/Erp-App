@@ -53,11 +53,11 @@ conversion, and tax handling. All data lives in **Firebase Cloud Firestore**
 5. Sign in with a Firebase Authentication user (create one in the Firebase
    console, or use the account provided by the instructor).
 
-To build a release APK:
 
-```text
-flutter build apk --release
-```
+## Password and user name for login 
+user :Admin@gmail.com
+password :Admin@123
+
 
 The built APK is `build/app/outputs/flutter-apk/app-release.apk`. A copy for
 submission is included at [`release/app-release.apk`](release/app-release.apk).
