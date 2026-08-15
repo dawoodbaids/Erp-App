@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -9,20 +11,22 @@ import '../../controllers/settings_controller.dart';
 import '../../controllers/shell_controller.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_radius.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/dashboard.dart';
 import '../../models/invoice.dart';
 import '../../widgets/barcode_scanner_page.dart';
-import '../../widgets/charts/app_charts.dart';
 import '../../widgets/ui/app_card.dart';
 import '../../widgets/ui/app_loading.dart';
+import '../../widgets/ui/app_page_header.dart';
 import '../../widgets/ui/app_section_header.dart';
 import '../../widgets/ui/app_states.dart';
 import '../../widgets/ui/initials_avatar.dart';
 import '../../widgets/ui/invoice_card.dart';
 import '../../widgets/ui/stat_card.dart';
+import '../../widgets/ui/wave_decoration.dart';
+import '../../widgets/charts/app_charts.dart';
 
+//dashboad code must be more clean
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -56,104 +60,148 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: GetX<DashboardController>(
-        builder: (dashboard) {
-          if (dashboard.isLoading && dashboard.summary.value == null) {
-            return const AppLoadingState();
-          }
-          if (dashboard.errorMessage != null &&
-              dashboard.summary.value == null) {
-            return AppErrorState(
-              title: 'dashboard.errorTitle'.tr,
-              message: dashboard.errorMessage!,
-              onRetry: dashboard.refresh,
-            );
-          }
-
-          final summary = dashboard.summary.value;
-          final status = dashboard.invoiceStatus.value;
-          if (summary == null || status == null) {
-            return AppErrorState(
-              title: 'dashboard.errorTitle'.tr,
-              message: 'dashboard.noData'.tr,
-              onRetry: dashboard.refresh,
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
-              children: [
-                _HomeHeader(name: name, greeting: _greetingText()),
-                const SizedBox(height: 20),
-                _SalesHero(summary: summary),
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(title: 'dashboard.quickActions'.tr),
+      body: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: WaveAccent(
+                height: 250,
+                color: Theme.of(context).colorScheme.primary.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.07
+                      : 0.1,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _QuickActions(shell: shell),
-                ),
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SummaryGrid(summary: summary),
-                ),
-                const SizedBox(height: 22),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(
-                    title: 'dashboard.topProducts'.tr,
-                    actionLabel: 'dashboard.viewAll'.tr,
-                    onAction: shell.goToProducts,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const _TopProducts(),
-                const SizedBox(height: 22),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(
-                    title: 'dashboard.recentInvoices'.tr,
-                    actionLabel: 'dashboard.viewAll'.tr,
-                    onAction: shell.goToInvoices,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                _RecentInvoices(),
-                const SizedBox(height: 22),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(title: 'dashboard.salesTrend'.tr),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: _SalesTrendCard(points: dashboard.salesTrend),
-                ),
-                const SizedBox(height: 22),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(title: 'dashboard.invoiceStatus'.tr),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: _StatusCard(status: status),
-                ),
-                const SizedBox(height: 22),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AppSectionHeader(title: 'dashboard.recentActivity'.tr),
-                ),
-                const SizedBox(height: 4),
-                const _RecentActivity(),
-              ],
+              ),
             ),
-          );
-        },
+          ),
+          GetX<DashboardController>(
+            builder: (dashboard) {
+              if (dashboard.isLoading && dashboard.summary.value == null) {
+                return const AppLoadingState();
+              }
+              if (dashboard.errorMessage != null &&
+                  dashboard.summary.value == null) {
+                return AppErrorState(
+                  title: 'dashboard.errorTitle'.tr,
+                  message: dashboard.errorMessage!,
+                  onRetry: dashboard.refresh,
+                );
+              }
+
+              final summary = dashboard.summary.value;
+              final status = dashboard.invoiceStatus.value;
+              if (summary == null || status == null) {
+                return AppErrorState(
+                  title: 'dashboard.errorTitle'.tr,
+                  message: 'dashboard.noData'.tr,
+                  onRetry: dashboard.refresh,
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
+                  children: [
+                    SafeArea(
+                      bottom: false,
+                      child: AppPageHeader(
+                        title: 'dashboard.overview'.tr,
+                        subtitle: _greetingText(name),
+                        subtitleStyle: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                        actions: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: InitialsAvatar(name: name, size: 40),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _SalesHero(summary: summary),
+                    const SizedBox(height: 14),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _SummaryGrid(summary: summary),
+                    ),
+                    const SizedBox(height: 22),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: AppSectionHeader(
+                        title: 'dashboard.topProducts'.tr,
+                        actionLabel: 'dashboard.viewAll'.tr,
+                        onAction: shell.goToProducts,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const _TopProducts(),
+                    const SizedBox(height: 22),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: AppSectionHeader(
+                        title: 'dashboard.recentInvoices'.tr,
+                        actionLabel: 'dashboard.viewAll'.tr,
+                        onAction: shell.goToInvoices,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _RecentInvoices(),
+                    const SizedBox(height: 22),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: AppSectionHeader(title: 'dashboard.salesTrend'.tr),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: _SalesTrendCard(points: dashboard.salesTrend),
+                    ),
+                    const SizedBox(height: 22),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: AppSectionHeader(
+                        title: 'dashboard.invoiceStatus'.tr,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: _StatusCard(status: status),
+                    ),
+                    const SizedBox(height: 22),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: AppSectionHeader(
+                        title: 'dashboard.quickActions'.tr,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _QuickActions(shell: shell),
+                    ),
+                    const SizedBox(height: 22),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: AppSectionHeader(
+                        title: 'dashboard.recentActivity'.tr,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const _RecentActivity(),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'dashboard-create-invoice',
@@ -164,82 +212,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  String _greetingText() {
+  String _greetingText(String name) {
     final hour = DateTime.now().hour;
-    return hour < 12
+    final greeting = hour < 12
         ? 'dashboard.goodMorning'.tr
         : hour < 17
         ? 'dashboard.goodAfternoon'.tr
         : 'dashboard.goodEvening'.tr;
+    return '$greeting, $name';
   }
 }
 
-/// Clean greeting header. Replaces the old "Overview" header.
-class _HomeHeader extends StatelessWidget {
-  final String greeting;
-  final String name;
-
-  const _HomeHeader({required this.greeting, required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$greeting, $name',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                      height: 1.15,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'dashboard.subtitle'.tr,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.all(2.5),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.22),
-                ),
-              ),
-              child: InitialsAvatar(name: name, size: 42),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Total Sales hero card.
-///
-/// A stable, rectangular card with rounded corners. No ClipPath, no wave and
-/// no scroll-dependent effects, so its shape never changes while scrolling.
 class _SalesHero extends StatelessWidget {
   final DashboardSummary summary;
 
@@ -250,45 +233,44 @@ class _SalesHero extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.brandStart, AppColors.brandEnd],
+    return ClipPath(
+      clipper: WaveClipper(),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 48),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.brandStart, AppColors.brandEnd],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.28),
+              blurRadius: 26,
+              offset: const Offset(0, 12),
+            ),
+          ],
         ),
-        borderRadius: AppRadius.all(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brandEnd.withValues(alpha: isDark ? 0.4 : 0.24),
-            blurRadius: 26,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -36,
-            top: -44,
-            child: _GlowCircle(
-              size: 160,
-              color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.09),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -34,
+              top: -38,
+              child: _GlowCircle(
+                size: 150,
+                color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.09),
+              ),
             ),
-          ),
-          Positioned(
-            right: 24,
-            bottom: -52,
-            child: _GlowCircle(
-              size: 128,
-              color: AppColors.cyan.withValues(alpha: isDark ? 0.18 : 0.22),
+            Positioned(
+              right: 26,
+              bottom: -42,
+              child: _GlowCircle(
+                size: 110,
+                color: AppColors.cyan.withValues(alpha: isDark ? 0.16 : 0.2),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
-            child: Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -297,90 +279,73 @@ class _SalesHero extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.16),
+                        color: AppColors.onPrimary.withValues(alpha: 0.16),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.28),
+                          color: AppColors.onPrimary.withValues(alpha: 0.25),
                         ),
                       ),
                       child: const Icon(
                         Icons.insights_rounded,
-                        color: Colors.white,
+                        color: AppColors.onPrimary,
                         size: 21,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
+                    Text(
+                      'dashboard.totalSales'.tr,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: AppColors.onPrimary.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.onPrimary.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                       child: Text(
-                        'dashboard.totalSales'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.92),
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
+                        '${summary.approvedInvoices} ${'dashboard.approved'.tr}',
+                        style: const TextStyle(
+                          color: AppColors.onPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    _ApprovedBadge(count: summary.approvedInvoices),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 Obx(() {
                   final code =
                       Get.find<SettingsController>().defaultCurrency?.code ??
                       '';
-                  return FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      '${Formatters.amount(summary.totalSales)} $code',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.6,
-                      ),
+                  return Text(
+                    '${Formatters.amount(summary.totalSales)} $code',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: AppColors.onPrimary,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
                     ),
                   );
                 }),
+                const SizedBox(height: 8),
+                Text(
+                  'dashboard.subtitle'.tr,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.onPrimary.withValues(alpha: 0.8),
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ApprovedBadge extends StatelessWidget {
-  final int count;
-
-  const _ApprovedBadge({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.check_circle_rounded, size: 13, color: Colors.white),
-          const SizedBox(width: 4),
-          Text(
-            '$count ${'dashboard.approved'.tr}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -397,7 +362,11 @@ class _GlowCircle extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
     );
   }
 }
@@ -413,36 +382,42 @@ class _SummaryGrid extends StatelessWidget {
       (
         label: 'dashboard.totalInvoices',
         icon: Icons.receipt_long_rounded,
+        feature: _FeatureKind.invoices,
         color: AppColors.primary,
         background: AppColors.primarySoft,
       ),
       (
         label: 'dashboard.customers',
         icon: Icons.people_rounded,
+        feature: _FeatureKind.customers,
         color: AppColors.primary,
         background: AppColors.primarySoft,
       ),
       (
         label: 'dashboard.products',
         icon: Icons.inventory_2_rounded,
+        feature: _FeatureKind.products,
         color: AppColors.primary,
         background: AppColors.primarySoft,
       ),
       (
         label: 'dashboard.draft',
         icon: Icons.schedule_rounded,
+        feature: _FeatureKind.draft,
         color: AppColors.draft,
         background: AppColors.draftSoft,
       ),
       (
         label: 'dashboard.approved',
         icon: Icons.check_circle_rounded,
+        feature: _FeatureKind.approved,
         color: AppColors.approved,
         background: AppColors.approvedSoft,
       ),
       (
         label: 'dashboard.cancelled',
         icon: Icons.cancel_rounded,
+        feature: _FeatureKind.cancelled,
         color: AppColors.cancelled,
         background: AppColors.cancelledSoft,
       ),
@@ -464,7 +439,7 @@ class _SummaryGrid extends StatelessWidget {
         crossAxisCount: 3,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        mainAxisExtent: 124,
+        mainAxisExtent: 132,
       ),
       itemBuilder: (_, index) {
         final card = cards[index];
@@ -474,10 +449,199 @@ class _SummaryGrid extends StatelessWidget {
           icon: card.icon,
           color: card.color,
           background: card.background,
+          feature: _FeatureArt(kind: card.feature, color: card.color),
         );
       },
     );
   }
+}
+
+/// Distinct icon-free motif that visualises what each stat card represents.
+enum _FeatureKind { invoices, customers, products, draft, approved, cancelled }
+
+class _FeatureArt extends StatelessWidget {
+  final _FeatureKind kind;
+  final Color color;
+
+  const _FeatureArt({required this.kind, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(28, 28),
+      painter: _FeaturePainter(kind: kind, color: color),
+    );
+  }
+}
+
+class _FeaturePainter extends CustomPainter {
+  final _FeatureKind kind;
+  final Color color;
+
+  _FeaturePainter({required this.kind, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    switch (kind) {
+      case _FeatureKind.invoices:
+        _paintInvoices(canvas, size);
+      case _FeatureKind.customers:
+        _paintCustomers(canvas, size);
+      case _FeatureKind.products:
+        _paintProducts(canvas, size);
+      case _FeatureKind.draft:
+        _paintDraft(canvas, size);
+      case _FeatureKind.approved:
+        _paintApproved(canvas, size);
+      case _FeatureKind.cancelled:
+        _paintCancelled(canvas, size);
+    }
+  }
+
+  void _paintInvoices(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    RRect sheet(double dx, double dy) {
+      final rect = Rect.fromCenter(
+        center: center.translate(dx, dy),
+        width: 15,
+        height: 19,
+      );
+      return RRect.fromRectAndCorners(
+        rect,
+        topLeft: const Radius.circular(2.5),
+        topRight: const Radius.circular(2.5),
+        bottomLeft: const Radius.circular(2.5),
+        bottomRight: const Radius.circular(2.5),
+      );
+    }
+
+    canvas.drawRRect(
+      sheet(-3.5, -3.5),
+      Paint()..color = color.withValues(alpha: 0.25),
+    );
+    canvas.drawRRect(
+      sheet(-1.5, -1.5),
+      Paint()..color = color.withValues(alpha: 0.5),
+    );
+    canvas.drawRRect(sheet(0.5, 0.5), Paint()..color = color);
+  }
+
+  void _paintCustomers(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final outline = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..color = color;
+    canvas.drawCircle(
+      center.translate(-7, 3.5),
+      6.5,
+      outline..color = color.withValues(alpha: 0.3),
+    );
+    canvas.drawCircle(
+      center.translate(7, 3.5),
+      6.5,
+      outline..color = color.withValues(alpha: 0.55),
+    );
+    canvas.drawCircle(center.translate(0, -2), 7, Paint()..color = color);
+  }
+
+  void _paintProducts(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: center.translate(0, 2.5),
+          width: 17,
+          height: 12,
+        ),
+        const Radius.circular(3),
+      ),
+      Paint()..color = color,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: center.translate(0, -4.5),
+          width: 12,
+          height: 6,
+        ),
+        const Radius.circular(2),
+      ),
+      Paint()..color = color.withValues(alpha: 0.45),
+    );
+  }
+
+  void _paintDraft(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..color = color;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 10.5),
+      -math.pi / 2,
+      math.pi * 1.5,
+      false,
+      paint,
+    );
+    final hand = Paint()
+      ..color = color
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(center, Offset(center.dx, center.dy - 7.5), hand);
+    canvas.drawLine(center, Offset(center.dx + 5.5, center.dy + 2.5), hand);
+    canvas.drawCircle(center, 1.7, Paint()..color = color);
+  }
+
+  void _paintApproved(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawCircle(
+      center,
+      11,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = color,
+    );
+    final check = Path()
+      ..moveTo(center.dx - 5, center.dy - 0.5)
+      ..lineTo(center.dx - 1.5, center.dy + 3.5)
+      ..lineTo(center.dx + 5.5, center.dy - 4);
+    canvas.drawPath(
+      check,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  void _paintCancelled(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawCircle(
+      center,
+      11,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = color,
+    );
+    canvas.drawLine(
+      center.translate(-6.5, -6.5),
+      center.translate(6.5, 6.5),
+      Paint()
+        ..color = color
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _FeaturePainter oldDelegate) =>
+      oldDelegate.kind != kind || oldDelegate.color != color;
 }
 
 class _SalesTrendCard extends StatelessWidget {
@@ -660,7 +824,7 @@ class _QuickActions extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        mainAxisExtent: 88,
+        mainAxisExtent: 94,
       ),
       itemBuilder: (_, index) => _QuickActionTile(
         icon: actions[index].icon,
@@ -685,57 +849,59 @@ class _QuickActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: AppRadius.all(AppRadius.lg),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.all(AppRadius.lg),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withValues(alpha: 0.06),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.surface,
+              theme.colorScheme.primary.withValues(alpha: 0.035),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.brandStart, AppColors.brandEnd],
-                    ),
-                    borderRadius: AppRadius.all(AppRadius.md),
-                  ),
-                  child: Icon(icon, size: 20, color: Colors.white),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor.withValues(alpha: 0.07),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF00BCD4), Color(0xFF1565C0)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 21, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -938,10 +1104,10 @@ class _ProductRankRow extends StatelessWidget {
                   : theme.colorScheme.primary.withValues(alpha: 0.1),
               gradient: rank == 1
                   ? const LinearGradient(
-                      colors: [AppColors.brandStart, AppColors.brandEnd],
+                      colors: [Color(0xFF00BCD4), Color(0xFF1565C0)],
                     )
                   : null,
-              borderRadius: AppRadius.all(AppRadius.md),
+              borderRadius: BorderRadius.circular(11),
             ),
             child: Text(
               '$rank',
@@ -997,10 +1163,7 @@ class _ProductRankRow extends StatelessWidget {
                           child: Container(
                             decoration: const BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [
-                                  AppColors.brandStart,
-                                  AppColors.brandEnd,
-                                ],
+                                colors: [Color(0xFF00BCD4), Color(0xFF1565C0)],
                               ),
                               borderRadius: BorderRadius.all(
                                 Radius.circular(999),
@@ -1057,7 +1220,7 @@ class _ActivityRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${invoice.status.translationKey.tr} · ${invoice.displayNumber}',
+                  '${invoice.status.translationKey.tr} ┬╖ ${invoice.displayNumber}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
