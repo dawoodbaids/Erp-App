@@ -133,9 +133,13 @@ round-trips to the original value with no drift. When a rate is missing the
 original currency amount is shown instead of a made-up rate.
 
 `invoices/{invoiceId}` stores the customer and currency snapshot plus an
-`items` array. It contains:
+`items` array. The document ID is the sequential invoice number string
+(e.g. `1`, `2`, …), allocated atomically by `InvoiceNumberService` using the
+`settings/invoice_counter` document. It contains:
 
-- `invoiceNumber` number (sequential; displayed as `#1`, `#2`, …)
+- `invoiceNumber` string (same value as the document ID; displayed as `#1`,
+  `#2`, …). Legacy documents holding padded numbers such as `0001` or
+  `INV-2026-0003` remain readable and searchable.
 - `invoiceName` string
 - `customerId` and `customerName`
 - `currencyId`, `currencyCode`, `currencyName`, and `currencySymbol`
