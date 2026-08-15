@@ -7,15 +7,14 @@ import '../../core/theme/app_text_styles.dart';
 
 /// Statistic card used on the dashboard.
 ///
-/// A layered surface with a soft tinted gradient, a slim accent bar and a
-/// gradient value so metrics read as modern, premium surfaces.
+/// A clean, flat surface with a tinted icon chip and muted label so metrics
+/// read clearly in both light and dark mode.
 class StatCard extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
   final Color color;
   final Color background;
-  final Widget? feature;
 
   const StatCard({
     super.key,
@@ -24,7 +23,6 @@ class StatCard extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.background,
-    this.feature,
   });
 
   @override
@@ -35,97 +33,59 @@ class StatCard extends StatelessWidget {
     final textColor = isDark ? AppColors.textPrimaryDark : color;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.surface,
-            Color.lerp(theme.colorScheme.surface, color, isDark ? 0.05 : 0.03)!,
-          ],
-        ),
+        color: theme.colorScheme.surface,
         borderRadius: AppRadius.all(AppRadius.lg),
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.shadowColor.withValues(alpha: isDark ? 0.2 : 0.1),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
+            color: theme.shadowColor.withValues(alpha: isDark ? 0.18 : 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            top: 0,
-            left: 16,
-            child: Container(
-              width: 34,
-              height: 3,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color, AppColors.brandEnd],
-                ),
-                borderRadius: AppRadius.pillRadius,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: AppRadius.all(AppRadius.md),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const Spacer(),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: AppTextStyles.statValue(context).copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.5,
+                color: textColor,
               ),
             ),
           ),
-          if (feature != null)
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: isDark ? 0.14 : 0.09),
-                  shape: BoxShape.circle,
-                ),
-                child: feature,
-              ),
+          AppSpacing.gapXxs,
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.statLabel(context).copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
             ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Spacer(),
-              ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [textColor, AppColors.brandEnd],
-                ).createShader(bounds),
-                blendMode: BlendMode.srcIn,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    value,
-                    maxLines: 1,
-                    style: AppTextStyles.statValue(context).copyWith(
-                      fontSize: 25,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ),
-              ),
-              AppSpacing.gapXxs,
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.statLabel(context).copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ],
           ),
         ],
       ),

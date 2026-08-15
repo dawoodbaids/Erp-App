@@ -350,16 +350,20 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                       ),
                     )
                   else
-                    ...controller.items.map((item) {
-                      return InvoiceItemCard(
-                        key: ValueKey(item.id),
-                        item: item,
-                        editable: editable,
-                        currencyCode: currencyCode,
-                        onQuantityChanged: (value) =>
-                            controller.updateQuantity(item.id, value),
-                        onRemove: () => controller.removeItem(item.id),
-                      );
+                    ...controller.items.indexed.expand((entry) {
+                      final (index, item) = entry;
+                      return [
+                        if (index > 0) const SizedBox(height: 12),
+                        InvoiceItemCard(
+                          key: ValueKey(item.id),
+                          item: item,
+                          editable: editable,
+                          currencyCode: currencyCode,
+                          onQuantityChanged: (value) =>
+                              controller.updateQuantity(item.id, value),
+                          onRemove: () => controller.removeItem(item.id),
+                        ),
+                      ];
                     }),
                   const SizedBox(height: 16),
                   InvoiceSummary(

@@ -63,7 +63,7 @@ class AppTranslations extends Translations {
     'dashboard.goodMorning': 'Good morning',
     'dashboard.goodAfternoon': 'Good afternoon',
     'dashboard.goodEvening': 'Good evening',
-    'dashboard.subtitle': 'Here is your business overview',
+    'dashboard.subtitle': 'Here’s what’s happening with your business',
     'dashboard.totalSales': 'TOTAL SALES',
     'dashboard.totalInvoices': 'Total Invoices',
     'dashboard.draft': 'Draft',
@@ -541,7 +541,7 @@ class AppTranslations extends Translations {
     'dashboard.goodMorning': 'صباح الخير',
     'dashboard.goodAfternoon': 'مساء الخير',
     'dashboard.goodEvening': 'مساء الخير',
-    'dashboard.subtitle': 'هذه نظرة عامة على أعمالك',
+    'dashboard.subtitle': 'هذا ما يحدث في أعمالك اليوم',
     'dashboard.totalSales': 'إجمالي المبيعات',
     'dashboard.totalInvoices': 'إجمالي الفواتير',
     'dashboard.draft': 'مسودة',
@@ -843,8 +843,7 @@ class AppTranslations extends Translations {
     'currency.addFailed': 'تعذّرت إضافة العملة',
     'currency.deleteFailed': 'تعذّر حذف العملة',
     'currency.deleteTitle': 'حذف العملة؟',
-    'currency.deleteMessage':
-        'سيتم حذف {code} وأسعار صرفها من قاعدة البيانات.',
+    'currency.deleteMessage': 'سيتم حذف {code} وأسعار صرفها من قاعدة البيانات.',
     'currency.emptyTitle': 'لا توجد عملات مهيأة',
     'currency.emptyMessage':
         'أضف أول عملة. تصبح أول عملة هي الأساس المستخدم لأسعار الصرف '
@@ -880,7 +879,8 @@ class AppTranslations extends Translations {
 
     // Tax screen
     'taxes.title': 'الضرائب',
-    'taxes.subtitle': 'يتم تطبيق أول ضريبة نشطة على المنتجات والفواتير الجديدة.',
+    'taxes.subtitle':
+        'يتم تطبيق أول ضريبة نشطة على المنتجات والفواتير الجديدة.',
     'taxes.add': 'إضافة ضريبة',
     'taxes.addTitle': 'إضافة ضريبة',
     'taxes.editTitle': 'تعديل الضريبة',
@@ -898,7 +898,8 @@ class AppTranslations extends Translations {
     'taxes.deleteMessage':
         'سيتم حذف "{name}" من قاعدة البيانات. الفواتير الحالية تحتفظ بنسبتها المحفوظة.',
     'taxes.emptyTitle': 'لا توجد ضرائب مهيأة',
-    'taxes.emptyMessage': 'أضف نسبة ضريبية لتطبيقها على الفواتير والمنتجات الجديدة.',
+    'taxes.emptyMessage':
+        'أضف نسبة ضريبية لتطبيقها على الفواتير والمنتجات الجديدة.',
     'taxes.defaultHint': 'تُطبق على الفواتير الجديدة',
 
     // Language screen

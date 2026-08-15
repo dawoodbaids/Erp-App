@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 class AppPageHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
+  final TextStyle? subtitleStyle;
   final List<Widget>? actions;
   final EdgeInsetsGeometry padding;
 
@@ -13,6 +14,7 @@ class AppPageHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.subtitleStyle,
     this.actions,
     this.padding = const EdgeInsets.fromLTRB(20, 16, 20, 12),
   });
@@ -40,18 +42,17 @@ class AppPageHeader extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     subtitle!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style:
+                        subtitleStyle ??
+                        theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 ],
               ],
             ),
           ),
-          if (actions != null) ...[
-            const SizedBox(width: 12),
-            ...actions!,
-          ],
+          if (actions != null) ...[const SizedBox(width: 12), ...actions!],
         ],
       ),
     );

@@ -83,21 +83,6 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _SectionLabel('settings.account'.tr),
-                AppGroupCard(
-                  children: [
-                    AppTile(
-                      icon: Icons.lock_outline,
-                      title: 'settings.security'.tr,
-                      subtitle: 'settings.securitySubtitle'.tr,
-                      onTap: () => Get.snackbar(
-                        'settings.security'.tr,
-                        'settings.securityNote'.tr,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
                 _SectionLabel('settings.application'.tr),
                 AppGroupCard(
                   children: [
