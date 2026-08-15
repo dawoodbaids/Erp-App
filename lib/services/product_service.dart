@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/product.dart';
+import '../core/utils/firestore_id_service.dart';
 import 'firebase_service_exception.dart';
 
 class ProductService {
@@ -52,13 +53,17 @@ class ProductService {
   Future<Product> createProduct(Product draft) {
     return runFirebase(() async {
       await _ensureBarcodeAvailable(draft.barcode);
-      final reference = _products.doc();
-      await reference.set({
+      final id = await createWithUniqueId(
+        _products,
+        draft.name,
+        (_) => {
         ...draft.toFirestore(),
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
-      return Product.fromFirestore(reference.id, {
+        },
+        sanitize: false,
+      );
+      return Product.fromFirestore(id, {
         ...draft.toFirestore(),
         'isActive': draft.isActive,
       });

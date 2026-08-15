@@ -296,39 +296,39 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                   const SizedBox(height: 16),
                   _discountField(context, controller),
                   const SizedBox(height: 20),
-                   LayoutBuilder(
-                     builder: (context, constraints) {
-                       final compact = constraints.maxWidth < 420;
-                       final buttons = [
-                         OutlinedButton.icon(
-                           onPressed: editable ? _scanBarcode : null,
-                           icon: const Icon(Icons.qr_code_scanner),
-                           label: Text('form.scanBarcode'.tr),
-                         ),
-                         FilledButton.tonalIcon(
-                           onPressed: editable ? _addProduct : null,
-                           icon: const Icon(Icons.add),
-                           label: Text('form.addProduct'.tr),
-                         ),
-                       ];
-                       return compact
-                           ? Column(
-                               crossAxisAlignment: CrossAxisAlignment.stretch,
-                               children: [
-                                 buttons[0],
-                                 const SizedBox(height: 10),
-                                 buttons[1],
-                               ],
-                             )
-                           : Row(
-                               children: [
-                                 Expanded(child: buttons[0]),
-                                 const SizedBox(width: 12),
-                                 Expanded(child: buttons[1]),
-                               ],
-                             );
-                     },
-                   ),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 420;
+                      final buttons = [
+                        OutlinedButton.icon(
+                          onPressed: editable ? _scanBarcode : null,
+                          icon: const Icon(Icons.qr_code_scanner),
+                          label: Text('form.scanBarcode'.tr),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: editable ? _addProduct : null,
+                          icon: const Icon(Icons.add),
+                          label: Text('form.addProduct'.tr),
+                        ),
+                      ];
+                      return compact
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                buttons[0],
+                                const SizedBox(height: 10),
+                                buttons[1],
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                Expanded(child: buttons[0]),
+                                const SizedBox(width: 12),
+                                Expanded(child: buttons[1]),
+                              ],
+                            );
+                    },
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'form.items'.tr,
@@ -589,8 +589,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       initialValue: controller.discountAmount.value == 0
           ? ''
           : Formatters.amount(controller.discountAmount.value),
-      onChanged: (value) =>
-          controller.setDiscount(double.tryParse(value) ?? 0),
+      onChanged: (value) => controller.setDiscount(double.tryParse(value) ?? 0),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
       decoration: InputDecoration(

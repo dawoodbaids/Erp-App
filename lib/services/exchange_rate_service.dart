@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/utils/exchange_rate_resolver.dart';
 import '../core/utils/firestore_helpers.dart';
 import '../models/exchange_rate.dart';
+import '../core/utils/firestore_id_service.dart';
 import 'firebase_service_exception.dart';
 
 /// Reads exchange rates from the Firebase `exchange_rates` collection.
@@ -134,14 +135,18 @@ class ExchangeRateService {
           code: 'already-exists',
         );
       }
-      final reference = _rates.doc();
-      await reference.set({
+      final code = currency.data()!['code']?.toString() ?? currencyId;
+      final id = await createWithUniqueId(
+        _rates,
+        'exchange_rate_$code',
+        (_) => {
         'currencyId': currencyId,
         'rateToBase': rate,
         'effectiveDate': FieldValue.serverTimestamp(),
-      });
+        },
+      );
       return ExchangeRate(
-        id: reference.id,
+        id: id,
         currencyId: currencyId,
         rateToBase: rate,
         effectiveDate: DateTime.now(),

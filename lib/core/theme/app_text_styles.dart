@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_colors.dart';
+
 /// Central text style helpers.
 ///
 /// The base typography lives in the [ThemeData] text theme; these helpers
@@ -57,16 +59,18 @@ class AppTextStyles {
   static TextStyle brandHero(BuildContext context) => Theme.of(context)
       .textTheme
       .headlineMedium!
-      .copyWith(color: Colors.white, fontWeight: FontWeight.w800);
+       .copyWith(color: AppColors.onPrimary, fontWeight: FontWeight.w800);
 
   static TextStyle brandHeroLabel(BuildContext context) =>
       Theme.of(context).textTheme.labelSmall!.copyWith(
-        color: Colors.white.withValues(alpha: 0.9),
+         color: AppColors.onPrimary.withValues(alpha: 0.9),
         fontWeight: FontWeight.w700,
         letterSpacing: 1.2,
       );
 
   static TextStyle brandHeroSubtitle(BuildContext context) => Theme.of(
     context,
-  ).textTheme.bodySmall!.copyWith(color: Colors.white.withValues(alpha: 0.8));
+   ).textTheme.bodySmall!.copyWith(
+     color: AppColors.onPrimary.withValues(alpha: 0.8),
+   );
 }

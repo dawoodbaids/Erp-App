@@ -45,8 +45,9 @@ class InvoiceService {
   /// matched through a safe scan.
   Future<Invoice> findByNumber(String number) {
     return runFirebase(() async {
+      final normalized = _normalizeInvoiceNumber(number);
       final snapshot = await _invoices
-          .where('invoiceNumber', isEqualTo: number)
+          .where('invoiceNumber', isEqualTo: normalized)
           .limit(1)
           .get();
       if (snapshot.docs.isNotEmpty) {
@@ -54,9 +55,10 @@ class InvoiceService {
         return Invoice.fromFirestore(doc.id, doc.data());
       }
       final numeric = int.tryParse(number);
-      final normalized = number.toLowerCase();
+      final normalizedLower = number.toLowerCase();
       for (final invoice in await _readInvoices()) {
-        if (invoice.invoiceNumber.toLowerCase() == normalized) {
+        if (invoice.invoiceNumber.toLowerCase() == normalizedLower ||
+            invoice.invoiceNumber == normalized) {
           return invoice;
         }
         if (numeric != null &&
@@ -66,6 +68,13 @@ class InvoiceService {
       }
       _notFound('Invoice');
     }, 'Could not search for the invoice. Please try again.');
+  }
+
+  String _normalizeInvoiceNumber(String value) {
+    final trimmed = value.trim();
+    final number = int.tryParse(trimmed);
+    if (number == null) return trimmed;
+    return number.toString().padLeft(4, '0');
   }
 
   Future<Invoice> createInvoice(Invoice draft) {
@@ -137,10 +146,50 @@ class InvoiceService {
       );
       final baseCurrency = _baseCurrency(currencies);
       final subtotal = TaxCalculator.subtotal(invoiceItems);
+      if (existing == null) {
+        late Invoice created;
+        await _invoiceNumberService.createInvoice((number) {
+          created = Invoice(
+            id: number,
+            invoiceNumber: number,
+            invoiceName: draft.invoiceName.trim(),
+            customer: customer,
+            currency: currency,
+            baseCurrencyCode: baseCurrency.code,
+            exchangeRate: _rateToBase(currency.id, currencies, rates),
+            taxRate: taxRate,
+            taxMode: draft.taxMode,
+            status: InvoiceStatus.draft,
+            discountAmount: draft.discountAmount,
+            items: List.unmodifiable(invoiceItems),
+            subtotal: subtotal,
+            taxAmount: TaxCalculator.taxAmount(
+              subtotal,
+              draft.discountAmount,
+              taxRate,
+              draft.taxMode,
+            ),
+            totalAmount: TaxCalculator.total(
+              subtotal,
+              draft.discountAmount,
+              taxRate,
+              draft.taxMode,
+            ),
+            createdAt: DateTime.now(),
+          );
+          final data = created.toFirestore();
+          data['createdAt'] = FieldValue.serverTimestamp();
+          data['updatedAt'] = FieldValue.serverTimestamp();
+          final userId = firebase_auth.FirebaseAuth.instance.currentUser?.uid;
+          if (userId != null) data['createdBy'] = userId;
+          return data;
+        });
+        return created;
+      }
+
       final invoice = Invoice(
-        id: existing?.id ?? _invoices.doc().id,
-        invoiceNumber:
-            existing?.invoiceNumber ?? await _invoiceNumberService.next(),
+        id: existing.id,
+        invoiceNumber: existing.invoiceNumber,
         invoiceName: draft.invoiceName.trim(),
         customer: customer,
         currency: currency,
@@ -164,14 +213,12 @@ class InvoiceService {
           taxRate,
           draft.taxMode,
         ),
-        createdAt: existing?.createdAt ?? DateTime.now(),
+        createdAt: existing.createdAt,
       );
 
       final reference = _invoices.doc(invoice.id);
       final data = invoice.toFirestore();
-      data['createdAt'] = existing == null
-          ? FieldValue.serverTimestamp()
-          : Timestamp.fromDate(invoice.createdAt);
+      data['createdAt'] = Timestamp.fromDate(invoice.createdAt);
       data['updatedAt'] = FieldValue.serverTimestamp();
       final userId = firebase_auth.FirebaseAuth.instance.currentUser?.uid;
       if (userId != null) data['createdBy'] = userId;

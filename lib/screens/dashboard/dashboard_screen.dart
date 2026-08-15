@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/auth_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../controllers/invoice_controller.dart';
+import '../../controllers/product_controller.dart';
 import '../../controllers/settings_controller.dart';
 import '../../controllers/shell_controller.dart';
 import '../../core/routes/app_routes.dart';
@@ -20,6 +23,7 @@ import '../../widgets/ui/app_states.dart';
 import '../../widgets/ui/initials_avatar.dart';
 import '../../widgets/ui/invoice_card.dart';
 import '../../widgets/ui/stat_card.dart';
+import '../../widgets/ui/wave_decoration.dart';
 import '../../widgets/charts/app_charts.dart';
 
 //dashboad code must be more clean
@@ -56,7 +60,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: GetX<DashboardController>(
+      body: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: WaveAccent(
+                height: 250,
+                color: Theme.of(context).colorScheme.primary.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.07
+                      : 0.1,
+                ),
+              ),
+            ),
+          ),
+          GetX<DashboardController>(
         builder: (dashboard) {
           if (dashboard.isLoading && dashboard.summary.value == null) {
             return const AppLoadingState();
@@ -96,10 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SalesHero(summary: summary),
-                ),
+                _SalesHero(summary: summary),
                 const SizedBox(height: 14),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -165,6 +183,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           );
         },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'dashboard-create-invoice',
@@ -196,8 +216,10 @@ class _SalesHero extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
+    return ClipPath(
+      clipper: WaveClipper(),
+      child: Container(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 48),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -213,7 +235,25 @@ class _SalesHero extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Stack(
+        children: [
+          Positioned(
+            right: -34,
+            top: -38,
+            child: _GlowCircle(
+              size: 150,
+              color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.09),
+            ),
+          ),
+          Positioned(
+            right: 26,
+            bottom: -42,
+            child: _GlowCircle(
+              size: 110,
+              color: AppColors.cyan.withValues(alpha: isDark ? 0.16 : 0.2),
+            ),
+          ),
+          Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -224,6 +264,9 @@ class _SalesHero extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.onPrimary.withValues(alpha: 0.16),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.onPrimary.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: const Icon(
                   Icons.insights_rounded,
@@ -241,12 +284,22 @@ class _SalesHero extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Text(
-                '${summary.approvedInvoices} ${'dashboard.approved'.tr}',
-                style: const TextStyle(
-                  color: AppColors.onPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.onPrimary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${summary.approvedInvoices} ${'dashboard.approved'.tr}',
+                  style: const TextStyle(
+                    color: AppColors.onPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -259,7 +312,8 @@ class _SalesHero extends StatelessWidget {
               '${Formatters.amount(summary.totalSales)} $code',
               style: theme.textTheme.headlineMedium?.copyWith(
                 color: AppColors.onPrimary,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.5,
               ),
             );
           }),
@@ -271,6 +325,29 @@ class _SalesHero extends StatelessWidget {
             ),
           ),
         ],
+      ),
+        ],
+      ),
+      ),
+    );
+  }
+}
+
+class _GlowCircle extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _GlowCircle({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
     );
   }
@@ -287,46 +364,52 @@ class _SummaryGrid extends StatelessWidget {
       (
         label: 'dashboard.totalInvoices',
         icon: Icons.receipt_long_rounded,
+        feature: _FeatureKind.invoices,
         color: AppColors.primary,
         background: AppColors.primarySoft,
       ),
       (
-        label: 'dashboard.draft',
-        icon: Icons.schedule_rounded,
-        color: AppColors.draft,
-        background: AppColors.draftSoft,
-      ),
-      (
-        label: 'dashboard.approved',
-        icon: Icons.check_circle_rounded,
-        color: AppColors.approved,
-        background: AppColors.approvedSoft,
-      ),
-      (
         label: 'dashboard.customers',
         icon: Icons.people_rounded,
+        feature: _FeatureKind.customers,
         color: AppColors.primary,
         background: AppColors.primarySoft,
       ),
       (
         label: 'dashboard.products',
         icon: Icons.inventory_2_rounded,
+        feature: _FeatureKind.products,
         color: AppColors.primary,
         background: AppColors.primarySoft,
       ),
       (
+        label: 'dashboard.draft',
+        icon: Icons.schedule_rounded,
+        feature: _FeatureKind.draft,
+        color: AppColors.draft,
+        background: AppColors.draftSoft,
+      ),
+      (
+        label: 'dashboard.approved',
+        icon: Icons.check_circle_rounded,
+        feature: _FeatureKind.approved,
+        color: AppColors.approved,
+        background: AppColors.approvedSoft,
+      ),
+      (
         label: 'dashboard.cancelled',
         icon: Icons.cancel_rounded,
+        feature: _FeatureKind.cancelled,
         color: AppColors.cancelled,
         background: AppColors.cancelledSoft,
       ),
     ];
     final values = [
       summary.totalInvoices.toString(),
-      summary.pendingDrafts.toString(),
-      summary.approvedInvoices.toString(),
       summary.totalCustomers.toString(),
       summary.totalProducts.toString(),
+      summary.pendingDrafts.toString(),
+      summary.approvedInvoices.toString(),
       summary.cancelledInvoices.toString(),
     ];
 
@@ -335,10 +418,10 @@ class _SummaryGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: cards.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+        crossAxisCount: 3,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-       mainAxisExtent: 122,
+       mainAxisExtent: 132,
       ),
       itemBuilder: (_, index) {
         final card = cards[index];
@@ -348,10 +431,177 @@ class _SummaryGrid extends StatelessWidget {
           icon: card.icon,
           color: card.color,
           background: card.background,
+          feature: _FeatureArt(kind: card.feature, color: card.color),
         );
       },
     );
   }
+}
+
+/// Distinct icon-free motif that visualises what each stat card represents.
+enum _FeatureKind { invoices, customers, products, draft, approved, cancelled }
+
+class _FeatureArt extends StatelessWidget {
+  final _FeatureKind kind;
+  final Color color;
+
+  const _FeatureArt({required this.kind, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(28, 28),
+      painter: _FeaturePainter(kind: kind, color: color),
+    );
+  }
+}
+
+class _FeaturePainter extends CustomPainter {
+  final _FeatureKind kind;
+  final Color color;
+
+  _FeaturePainter({required this.kind, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    switch (kind) {
+      case _FeatureKind.invoices:
+        _paintInvoices(canvas, size);
+      case _FeatureKind.customers:
+        _paintCustomers(canvas, size);
+      case _FeatureKind.products:
+        _paintProducts(canvas, size);
+      case _FeatureKind.draft:
+        _paintDraft(canvas, size);
+      case _FeatureKind.approved:
+        _paintApproved(canvas, size);
+      case _FeatureKind.cancelled:
+        _paintCancelled(canvas, size);
+    }
+  }
+
+  void _paintInvoices(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    RRect sheet(double dx, double dy) {
+      final rect = Rect.fromCenter(
+        center: center.translate(dx, dy),
+        width: 15,
+        height: 19,
+      );
+      return RRect.fromRectAndCorners(
+        rect,
+        topLeft: const Radius.circular(2.5),
+        topRight: const Radius.circular(2.5),
+        bottomLeft: const Radius.circular(2.5),
+        bottomRight: const Radius.circular(2.5),
+      );
+    }
+
+    canvas.drawRRect(sheet(-3.5, -3.5), Paint()..color = color.withValues(alpha: 0.25));
+    canvas.drawRRect(sheet(-1.5, -1.5), Paint()..color = color.withValues(alpha: 0.5));
+    canvas.drawRRect(sheet(0.5, 0.5), Paint()..color = color);
+  }
+
+  void _paintCustomers(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final outline = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..color = color;
+    canvas.drawCircle(center.translate(-7, 3.5), 6.5, outline..color = color.withValues(alpha: 0.3));
+    canvas.drawCircle(center.translate(7, 3.5), 6.5, outline..color = color.withValues(alpha: 0.55));
+    canvas.drawCircle(center.translate(0, -2), 7, Paint()..color = color);
+  }
+
+  void _paintProducts(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center.translate(0, 2.5), width: 17, height: 12),
+        const Radius.circular(3),
+      ),
+      Paint()..color = color,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center.translate(0, -4.5), width: 12, height: 6),
+        const Radius.circular(2),
+      ),
+      Paint()..color = color.withValues(alpha: 0.45),
+    );
+  }
+
+  void _paintDraft(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..color = color;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 10.5),
+      -math.pi / 2,
+      math.pi * 1.5,
+      false,
+      paint,
+    );
+    final hand = Paint()
+      ..color = color
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(center, Offset(center.dx, center.dy - 7.5), hand);
+    canvas.drawLine(center, Offset(center.dx + 5.5, center.dy + 2.5), hand);
+    canvas.drawCircle(center, 1.7, Paint()..color = color);
+  }
+
+  void _paintApproved(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawCircle(
+      center,
+      11,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = color,
+    );
+    final check = Path()
+      ..moveTo(center.dx - 5, center.dy - 0.5)
+      ..lineTo(center.dx - 1.5, center.dy + 3.5)
+      ..lineTo(center.dx + 5.5, center.dy - 4);
+    canvas.drawPath(
+      check,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  void _paintCancelled(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawCircle(
+      center,
+      11,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = color,
+    );
+    canvas.drawLine(
+      center.translate(-6.5, -6.5),
+      center.translate(6.5, 6.5),
+      Paint()
+        ..color = color
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _FeaturePainter oldDelegate) =>
+      oldDelegate.kind != kind || oldDelegate.color != color;
 }
 
 class _SalesTrendCard extends StatelessWidget {
@@ -561,15 +811,29 @@ class _QuickActionTile extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.surface,
+              theme.colorScheme.primary.withValues(alpha: 0.035),
+            ],
           ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor.withValues(alpha: 0.07),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -577,10 +841,14 @@ class _QuickActionTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.primarySoft,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF00BCD4), Color(0xFF1565C0)],
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, size: 21, color: AppColors.primary),
+              child: Icon(icon, size: 21, color: Colors.white),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -705,6 +973,7 @@ class _TopProducts extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetX<InvoiceController>(
       builder: (invoiceController) {
+        final productController = Get.find<ProductController>();
         final totals = <String, double>{};
         final names = <String, String>{};
         for (final invoice in invoiceController.invoices) {
@@ -712,9 +981,13 @@ class _TopProducts extends StatelessWidget {
             continue;
           }
           for (final item in invoice.items) {
-            totals[item.productId] =
-                (totals[item.productId] ?? 0) + item.quantity;
-            names[item.productId] = item.productName;
+            final product = productController.byId(item.productId);
+            final key = item.productId.isNotEmpty
+                ? item.productId
+                : item.productName;
+            if (key.isEmpty) continue;
+            totals[key] = (totals[key] ?? 0) + item.quantity;
+            names[key] = product?.name ?? item.productName;
           }
         }
         final ranked = totals.entries.toList()
@@ -739,27 +1012,132 @@ class _TopProducts extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                for (var i = 0; i < top.length; i++)
-                  ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.primarySoft,
-                      foregroundColor: AppColors.primary,
-                      child: Text('${i + 1}'),
-                    ),
-                    title: Text(
-                      names[top[i].key] ?? top[i].key,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    trailing: Text(
-                      Formatters.quantity(top[i].value),
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
+                for (var i = 0; i < top.length; i++) ...[
+                  _ProductRankRow(
+                    rank: i + 1,
+                    name: names[top[i].key] ?? 'Unknown product',
+                    quantity: top[i].value,
+                    maxQuantity: top.first.value,
                   ),
+                  if (i < top.length - 1) const Divider(height: 1, indent: 72),
+                ],
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _ProductRankRow extends StatelessWidget {
+  final int rank;
+  final String name;
+  final double quantity;
+  final double maxQuantity;
+
+  const _ProductRankRow({
+    required this.rank,
+    required this.name,
+    required this.quantity,
+    required this.maxQuantity,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final progress = maxQuantity <= 0 ? 0.0 : (quantity / maxQuantity).clamp(0.0, 1.0);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: rank == 1
+                  ? null
+                  : theme.colorScheme.primary.withValues(alpha: 0.1),
+              gradient: rank == 1
+                  ? const LinearGradient(
+                      colors: [Color(0xFF00BCD4), Color(0xFF1565C0)],
+                    )
+                  : null,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Text(
+              '$rank',
+              style: TextStyle(
+                color: rank == 1 ? Colors.white : theme.colorScheme.primary,
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      Formatters.quantity(quantity),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: SizedBox(
+                    height: 5,
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.12,
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: progress,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF00BCD4), Color(0xFF1565C0)],
+                              ),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(999),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

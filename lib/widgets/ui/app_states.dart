@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'wave_decoration.dart';
+
 class AppEmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -26,6 +28,7 @@ class AppEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const WaveAccent(height: 18),
             Container(
               width: 96,
               height: 96,

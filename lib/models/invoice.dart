@@ -102,10 +102,14 @@ class Invoice {
     this.cancelledAt,
   });
 
-  /// Human-readable number shown in the UI, e.g. `INV-2026-0001`. Legacy
-  /// numeric numbers keep their `#1` style.
+  /// Human-readable number shown in the UI. New numbers preserve their
+  /// leading zeroes; legacy numeric values keep their `#1` style.
   String get displayNumber =>
-      invoiceNumber.startsWith('INV-') ? invoiceNumber : '#$invoiceNumber';
+      RegExp(r'^\d{4,}$').hasMatch(invoiceNumber)
+          ? invoiceNumber
+          : (invoiceNumber.startsWith('INV-')
+              ? invoiceNumber
+              : '#$invoiceNumber');
 
   factory Invoice.fromFirestore(String id, Map<String, dynamic> data) {
     final items = (data['items'] as List?)

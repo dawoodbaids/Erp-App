@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/tax_rate.dart';
+import '../core/utils/firestore_id_service.dart';
 import 'firebase_service_exception.dart';
 
 /// Loads the applicable tax configuration from the Firebase `taxes`
@@ -46,14 +47,17 @@ class TaxService {
           code: 'invalid-argument',
         );
       }
-      final reference = _db.collection('taxes').doc();
-      await reference.set({
+      final id = await createWithUniqueId(
+        _db.collection('taxes'),
+        'tax_$trimmed',
+        (_) => {
         'name': trimmed,
         'rate': rate,
         'isActive': true,
         'createdAt': FieldValue.serverTimestamp(),
-      });
-      return TaxRate.fromFirestore(reference.id, {
+        },
+      );
+      return TaxRate.fromFirestore(id, {
         'name': trimmed,
         'rate': rate,
         'isActive': true,

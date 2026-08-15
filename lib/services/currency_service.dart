@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/currency.dart';
+import '../core/utils/firestore_id_service.dart';
 import 'firebase_service_exception.dart';
 
 /// Loads the currencies that actually exist in the Firebase `currencies`
@@ -45,16 +46,19 @@ class CurrencyService {
           );
         }
       }
-      final reference = _currencies.doc();
       final isFirst = existing.docs.isEmpty;
-      await reference.set({
+      final id = await createWithUniqueId(
+        _currencies,
+        'currency_$code',
+        (_) => {
         ...draft.toFirestore(),
         'code': code,
         'isBaseCurrency': draft.isBaseCurrency || isFirst,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
-      return Currency.fromFirestore(reference.id, {
+        },
+      );
+      return Currency.fromFirestore(id, {
         ...draft.toFirestore(),
         'code': code,
         'isBaseCurrency': draft.isBaseCurrency || isFirst,

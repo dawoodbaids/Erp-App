@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/customer.dart';
+import '../core/utils/firestore_id_service.dart';
 import 'firebase_service_exception.dart';
 
 class CustomerService {
@@ -50,16 +51,20 @@ class CustomerService {
         );
       }
 
-      final reference = _customers.doc();
       final now = DateTime.now();
-      await reference.set({
-        ...draft.toFirestore(),
-        'nameLower': draft.name.toLowerCase(),
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final id = await createWithUniqueId(
+        _customers,
+        draft.name,
+        (_) => {
+          ...draft.toFirestore(),
+          'nameLower': draft.name.toLowerCase(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        sanitize: false,
+      );
       return Customer(
-        id: reference.id,
+        id: id,
         name: draft.name,
         phone: draft.phone,
         email: draft.email,

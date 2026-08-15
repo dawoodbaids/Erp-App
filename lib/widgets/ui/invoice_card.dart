@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/routes/app_routes.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/invoice.dart';
@@ -48,6 +49,18 @@ class InvoiceCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Container(
+                width: 3.5,
+                height: dense ? 34 : 40,
+                decoration: BoxDecoration(
+                  color: _accentFor(
+                    invoice.status,
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
+                  borderRadius: AppRadius.pillRadius,
+                ),
+              ),
+              const SizedBox(width: 12),
               InitialsAvatar(
                 name: invoice.customer.name,
                 size: dense ? 38 : 44,
@@ -58,21 +71,23 @@ class InvoiceCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      invoice.displayNumber,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .3,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      invoice.displayNumber,
+                      title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -108,5 +123,17 @@ class InvoiceCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _accentFor(InvoiceStatus status, bool isDark) {
+    return switch (status) {
+      InvoiceStatus.draft => isDark ? AppColors.draftDark : AppColors.draft,
+      InvoiceStatus.approved => isDark
+          ? AppColors.approvedDark
+          : AppColors.approved,
+      InvoiceStatus.cancelled => isDark
+          ? AppColors.cancelledDark
+          : AppColors.cancelled,
+    };
   }
 }

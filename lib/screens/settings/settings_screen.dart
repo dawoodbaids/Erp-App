@@ -108,6 +108,57 @@ class SettingsScreen extends StatelessWidget {
                       onTap: () => Get.toNamed(AppRoutes.language),
                     ),
                     const AppDivider(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.brightness_6_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Theme',
+                                  style: Theme.of(context).textTheme.bodyLarge
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                Text(
+                                  'Choose how ERP looks on this device',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuButton<ThemeMode>(
+                            initialValue: controller.themeMode,
+                            onSelected: controller.setThemeMode,
+                            child: Chip(
+                              label: Text(_themeLabel(controller.themeMode)),
+                              avatar: const Icon(Icons.expand_more, size: 18),
+                            ),
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(
+                                value: ThemeMode.system,
+                                child: Text('System'),
+                              ),
+                              PopupMenuItem(
+                                value: ThemeMode.light,
+                                child: Text('Light'),
+                              ),
+                              PopupMenuItem(
+                                value: ThemeMode.dark,
+                                child: Text('Dark'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const AppDivider(),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -171,6 +222,12 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+
+  String _themeLabel(ThemeMode mode) => switch (mode) {
+    ThemeMode.light => 'Light',
+    ThemeMode.dark => 'Dark',
+    ThemeMode.system => 'System',
+  };
 }
 
 class _SectionLabel extends StatelessWidget {

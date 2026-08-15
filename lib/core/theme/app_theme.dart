@@ -5,6 +5,20 @@ import 'app_colors.dart';
 import 'app_radius.dart';
 
 class AppTheme {
+  static final ThemeData light = _build(
+    brightness: Brightness.light,
+    background: AppColors.scaffoldLight,
+    surface: AppColors.surfaceLight,
+    surfaceRaised: AppColors.surfaceLight,
+    filled: AppColors.fillLight,
+    border: AppColors.borderLight,
+    textPrimary: AppColors.textPrimaryLight,
+    textSecondary: AppColors.textSecondaryLight,
+    textTertiary: AppColors.textTertiaryLight,
+    primary: AppColors.primary,
+    onPrimary: AppColors.onPrimary,
+  );
+
   static final ThemeData dark = _build(
     brightness: Brightness.dark,
     background: AppColors.scaffoldDark,
@@ -177,8 +191,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         elevation: 0,
-        height: 70,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+         height: 68,
+           labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
@@ -365,7 +379,9 @@ class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primary,
         foregroundColor: onPrimary,
-        elevation: 0,
+        elevation: 3,
+        focusElevation: 3,
+        hoverElevation: 3,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),

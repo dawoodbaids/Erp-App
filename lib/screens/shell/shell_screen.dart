@@ -222,11 +222,18 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NavigationBar(
-      key: ValueKey(locale),
-      selectedIndex: index,
-      onDestinationSelected: onSelected,
-      destinations: [
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: Material(
+        elevation: 10,
+        shadowColor: Theme.of(context).shadowColor.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: NavigationBar(
+          key: ValueKey(locale),
+          selectedIndex: index,
+          onDestinationSelected: onSelected,
+          destinations: [
         NavigationDestination(
           icon: const Icon(Icons.grid_view_outlined),
           selectedIcon: const Icon(Icons.grid_view_rounded),
@@ -252,7 +259,9 @@ class _BottomBar extends StatelessWidget {
           selectedIcon: const Icon(Icons.tune_rounded),
           label: 'nav.settings'.tr,
         ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }

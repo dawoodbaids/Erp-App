@@ -1,13 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../controllers/product_controller.dart';
 import '../controllers/settings_controller.dart';
-import '../core/utils/product_image.dart';
 import '../models/product.dart';
 import 'barcode_dialog.dart';
 
@@ -36,13 +32,11 @@ class ProductFormDialog extends StatefulWidget {
 
 class _ProductFormDialogState extends State<ProductFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _imagePicker = ImagePicker();
   late final TextEditingController _nameController;
   late final TextEditingController _barcodeController;
   late final TextEditingController _priceController;
   late final TextEditingController _taxRateController;
   late String? _image;
-  String? _pickedImagePath;
   late String _currencyId;
   late bool _isActive;
   bool _saving = false;
@@ -93,63 +87,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
     final result = await BarcodeDialog.show(context);
     if (result != null && result.isNotEmpty) {
       _barcodeController.text = result;
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: Text('productForm.gallery'.tr),
-              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: Text('productForm.camera'.tr),
-              onTap: () => Navigator.of(context).pop(ImageSource.camera),
-            ),
-            if (_pickedImagePath != null || _image != null)
-              ListTile(
-                leading: Icon(
-                  Icons.delete_outline,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                title: Text('productForm.removeImage'.tr),
-                onTap: () {
-                  setState(() {
-                    _pickedImagePath = null;
-                    _image = null;
-                  });
-                  Navigator.of(context).pop();
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-    if (source == null) return;
-
-    try {
-      final picked = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 85,
-        maxWidth: 1600,
-      );
-      if (picked != null && mounted) {
-        setState(() {
-          _pickedImagePath = picked.path;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        Get.snackbar('productForm.imageFailed'.tr, 'error.retry'.tr);
-      }
     }
   }
 
@@ -214,23 +151,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
     }
 
     Navigator.of(context).pop(true);
-  }
-
-  Widget _imagePreview(BuildContext context) {
-    if (_pickedImagePath != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Image.file(
-          File(_pickedImagePath!),
-          width: 64,
-          height: 64,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              buildProductImage(null, size: 64, context: context),
-        ),
-      );
-    }
-    return buildProductImage(_image, size: 64, context: context);
   }
 
   @override
@@ -357,24 +277,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                   },
                 );
               }),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _imagePreview(context),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _saving ? null : _pickImage,
-                      icon: const Icon(Icons.add_a_photo_outlined),
-                      label: Text(
-                        _pickedImagePath == null
-                            ? 'productForm.selectImage'.tr
-                            : 'productForm.replaceImage'.tr,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 6),
               Row(
                 children: [

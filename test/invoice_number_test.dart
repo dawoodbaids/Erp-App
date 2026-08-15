@@ -30,13 +30,19 @@ Invoice _invoice(String id, String number) => Invoice(
 
 void main() {
   group('InvoiceNumberService.format', () {
-    test('produces sequential, unique INV-YYYY-NNNN numbers', () {
+    test('produces plain sequential invoice numbers', () {
       final numbers = [1, 2, 3]
           .map((seq) => InvoiceNumberService.format(seq, date: DateTime(2026)))
           .toList();
 
-      expect(numbers, ['INV-2026-0001', 'INV-2026-0002', 'INV-2026-0003']);
+      expect(numbers, ['0001', '0002', '0003']);
       expect(numbers.toSet().length, numbers.length);
+      expect(InvoiceNumberService.format(9), '0009');
+      expect(InvoiceNumberService.format(10), '0010');
+      expect(InvoiceNumberService.format(100), '0100');
+      expect(InvoiceNumberService.format(999), '0999');
+      expect(InvoiceNumberService.format(1000), '1000');
+      expect(InvoiceNumberService.format(10000), '10000');
     });
   });
 
@@ -67,12 +73,12 @@ void main() {
       Get.reset();
       final controller = Get.put(InvoiceController(), permanent: true);
       controller.invoices.addAll([
-        _invoice('a', 'INV-2026-0001'),
-        _invoice('b', 'INV-2026-0002'),
-        _invoice('c', 'INV-2026-0003'),
+         _invoice('a', '0001'),
+         _invoice('b', '0002'),
+         _invoice('c', '0003'),
       ]);
 
-      expect(controller.previewInvoiceNumber(), 'INV-2026-0004');
+      expect(controller.previewInvoiceNumber(), '0004');
     });
 
     test('handles legacy numeric invoices', () {
@@ -83,12 +89,13 @@ void main() {
         _invoice('b', '2'),
       ]);
 
-      expect(controller.previewInvoiceNumber(), 'INV-2026-0003');
+      expect(controller.previewInvoiceNumber(), '0003');
     });
   });
 
   group('displayNumber', () {
-    test('new numbers show as-is, legacy numbers keep the # style', () {
+    test('new numbers preserve zeroes, legacy numbers keep the # style', () {
+      expect(_invoice('a', '0001').displayNumber, '0001');
       expect(_invoice('a', 'INV-2026-0001').displayNumber, 'INV-2026-0001');
       expect(_invoice('b', '1').displayNumber, '#1');
     });

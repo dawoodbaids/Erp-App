@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/utils/exchange_rate_resolver.dart';
 import '../core/utils/formatters.dart';
@@ -14,6 +15,7 @@ import '../services/tax_service.dart';
 
 class SettingsController extends GetxController {
   final _locale = const Locale('en').obs;
+  final _themeMode = ThemeMode.system.obs;
   final _isLoading = false.obs;
   final _errorMessage = Rxn<String>();
 
@@ -26,8 +28,39 @@ class SettingsController extends GetxController {
   final _taxService = TaxService();
 
   Locale get locale => _locale.value;
+  ThemeMode get themeMode => _themeMode.value;
   bool get isLoading => _isLoading.value;
   String? get errorMessage => _errorMessage.value;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final value = preferences.getString('themeMode');
+      _themeMode.value = switch (value) {
+        'light' => ThemeMode.light,
+        'dark' => ThemeMode.dark,
+        _ => ThemeMode.system,
+      };
+    } catch (_) {
+      // Storage is unavailable in some unit-test environments.
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode.value = mode;
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString('themeMode', mode.name);
+    } catch (_) {
+      // The visual change still applies for the current session.
+    }
+  }
 
   /// The tax rate applied to new invoices, loaded from Firebase. Returns 0
   /// when no tax configuration exists in Firebase.
