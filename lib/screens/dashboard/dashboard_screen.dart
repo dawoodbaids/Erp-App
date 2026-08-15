@@ -11,6 +11,7 @@ import '../../controllers/settings_controller.dart';
 import '../../controllers/shell_controller.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/dashboard.dart';
 import '../../models/invoice.dart';
@@ -103,100 +104,139 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               return RefreshIndicator(
                 onRefresh: _refresh,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
-                  children: [
-                    SafeArea(
-                      bottom: false,
-                      child: AppPageHeader(
-                        title: 'dashboard.overview'.tr,
-                        subtitle: _greetingText(name),
-                        subtitleStyle: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
+                child: SafeArea(
+                  bottom: false,
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: AppPageHeader(
+                          title: _greetingText(name),
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                          actions: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: InitialsAvatar(name: name, size: 40),
                             ),
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-                        actions: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: InitialsAvatar(name: name, size: 40),
+                          ],
+                        ),
+                      ),
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _SalesHeroDelegate(
+                          summary: summary,
+                          extent: _heroExtent(context),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 96),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 14),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: _SummaryGrid(summary: summary),
+                              ),
+                              const SizedBox(height: 22),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: AppSectionHeader(
+                                  title: 'dashboard.topProducts'.tr,
+                                  actionLabel: 'dashboard.viewAll'.tr,
+                                  onAction: shell.goToProducts,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const _TopProducts(),
+                              const SizedBox(height: 22),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: AppSectionHeader(
+                                  title: 'dashboard.recentInvoices'.tr,
+                                  actionLabel: 'dashboard.viewAll'.tr,
+                                  onAction: shell.goToInvoices,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              _RecentInvoices(),
+                              const SizedBox(height: 22),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: AppSectionHeader(
+                                  title: 'dashboard.salesTrend'.tr,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  8,
+                                  16,
+                                  0,
+                                ),
+                                child: _SalesTrendCard(
+                                  points: dashboard.salesTrend,
+                                ),
+                              ),
+                              const SizedBox(height: 22),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: AppSectionHeader(
+                                  title: 'dashboard.invoiceStatus'.tr,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  8,
+                                  16,
+                                  0,
+                                ),
+                                child: _StatusCard(status: status),
+                              ),
+                              const SizedBox(height: 22),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: AppSectionHeader(
+                                  title: 'dashboard.quickActions'.tr,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: _QuickActions(shell: shell),
+                              ),
+                              const SizedBox(height: 22),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: AppSectionHeader(
+                                  title: 'dashboard.recentActivity'.tr,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const _RecentActivity(),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                    _SalesHero(summary: summary),
-                    const SizedBox(height: 14),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _SummaryGrid(summary: summary),
-                    ),
-                    const SizedBox(height: 22),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: AppSectionHeader(
-                        title: 'dashboard.topProducts'.tr,
-                        actionLabel: 'dashboard.viewAll'.tr,
-                        onAction: shell.goToProducts,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const _TopProducts(),
-                    const SizedBox(height: 22),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: AppSectionHeader(
-                        title: 'dashboard.recentInvoices'.tr,
-                        actionLabel: 'dashboard.viewAll'.tr,
-                        onAction: shell.goToInvoices,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    _RecentInvoices(),
-                    const SizedBox(height: 22),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: AppSectionHeader(title: 'dashboard.salesTrend'.tr),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: _SalesTrendCard(points: dashboard.salesTrend),
-                    ),
-                    const SizedBox(height: 22),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: AppSectionHeader(
-                        title: 'dashboard.invoiceStatus'.tr,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: _StatusCard(status: status),
-                    ),
-                    const SizedBox(height: 22),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: AppSectionHeader(
-                        title: 'dashboard.quickActions'.tr,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _QuickActions(shell: shell),
-                    ),
-                    const SizedBox(height: 22),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: AppSectionHeader(
-                        title: 'dashboard.recentActivity'.tr,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const _RecentActivity(),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -221,133 +261,285 @@ class _DashboardScreenState extends State<DashboardScreen> {
         : 'dashboard.goodEvening'.tr;
     return '$greeting, $name';
   }
+
+  double _heroExtent(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return width >= 600 ? 150 : 176;
+  }
 }
 
 class _SalesHero extends StatelessWidget {
   final DashboardSummary summary;
+  final bool wide;
 
-  const _SalesHero({required this.summary});
+  const _SalesHero({required this.summary, this.wide = false});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return ClipPath(
-      clipper: WaveClipper(),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 48),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.brandStart, AppColors.brandEnd],
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.brandStart, AppColors.brandEnd],
+        ),
+        borderRadius: AppRadius.all(AppRadius.xxl),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: isDark ? 0.1 : 0.18),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.brandEnd.withValues(alpha: isDark ? 0.45 : 0.3),
+            blurRadius: 32,
+            offset: const Offset(0, 14),
           ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.28),
-              blurRadius: 26,
-              offset: const Offset(0, 12),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -44,
+            top: -56,
+            child: _GlowCircle(
+              size: 190,
+              color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.08),
             ),
+          ),
+          Positioned(
+            right: 36,
+            bottom: -66,
+            child: _GlowCircle(
+              size: 150,
+              color: AppColors.cyan.withValues(alpha: isDark ? 0.16 : 0.2),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: wide ? 28 : 20,
+              vertical: wide ? 18 : 20,
+            ),
+            child: wide ? _buildWide(theme) : _buildStacked(theme),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStacked(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _SalesIcon(size: 40, iconSize: 21),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'dashboard.totalSales'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _ApprovedPill(count: summary.approvedInvoices),
           ],
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -34,
-              top: -38,
-              child: _GlowCircle(
-                size: 150,
-                color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.09),
-              ),
-            ),
-            Positioned(
-              right: 26,
-              bottom: -42,
-              child: _GlowCircle(
-                size: 110,
-                color: AppColors.cyan.withValues(alpha: isDark ? 0.16 : 0.2),
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.onPrimary.withValues(alpha: 0.16),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.onPrimary.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.insights_rounded,
-                        color: AppColors.onPrimary,
-                        size: 21,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'dashboard.totalSales'.tr,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppColors.onPrimary.withValues(alpha: 0.9),
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.onPrimary.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '${summary.approvedInvoices} ${'dashboard.approved'.tr}',
-                        style: const TextStyle(
-                          color: AppColors.onPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
+        const Spacer(),
+        _Amount(
+          summary: summary,
+          style: theme.textTheme.headlineMedium?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.6,
+            fontSize: 34,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'dashboard.subtitle'.tr,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: Colors.white.withValues(alpha: 0.82),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWide(ThemeData theme) {
+    return Row(
+      children: [
+        _SalesIcon(size: 46, iconSize: 23),
+        const SizedBox(width: 18),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'dashboard.totalSales'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
                 ),
-                const SizedBox(height: 20),
-                Obx(() {
-                  final code =
-                      Get.find<SettingsController>().defaultCurrency?.code ??
-                      '';
-                  return Text(
-                    '${Formatters.amount(summary.totalSales)} $code',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
-                    ),
-                  );
-                }),
-                const SizedBox(height: 8),
-                Text(
-                  'dashboard.subtitle'.tr,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.onPrimary.withValues(alpha: 0.8),
-                  ),
+              ),
+              const SizedBox(height: 6),
+              _Amount(
+                summary: summary,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.6,
+                  fontSize: 30,
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'dashboard.subtitle'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.82),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        _ApprovedPill(count: summary.approvedInvoices),
+      ],
+    );
+  }
+}
+
+/// Pins the Total Sales card to the top of the screen while the rest of the
+/// dashboard content scrolls underneath it.
+class _SalesHeroDelegate extends SliverPersistentHeaderDelegate {
+  _SalesHeroDelegate({required this.summary, required this.extent});
+
+  final DashboardSummary summary;
+  final double extent;
+
+  @override
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final wide = MediaQuery.sizeOf(context).width >= 600;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SizedBox(
+        height: extent,
+        width: double.infinity,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: _SalesHero(summary: summary, wide: wide),
         ),
       ),
     );
+  }
+
+  @override
+  bool shouldRebuild(covariant _SalesHeroDelegate oldDelegate) =>
+      oldDelegate.summary != summary || oldDelegate.extent != extent;
+}
+
+class _SalesIcon extends StatelessWidget {
+  final double size;
+  final double iconSize;
+
+  const _SalesIcon({required this.size, required this.iconSize});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+      ),
+      child: Icon(Icons.insights_rounded, color: Colors.white, size: iconSize),
+    );
+  }
+}
+
+class _ApprovedPill extends StatelessWidget {
+  final int count;
+
+  const _ApprovedPill({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.check_circle_rounded, size: 14, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(
+            '$count ${'dashboard.approved'.tr}',
+            maxLines: 1,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Amount extends StatelessWidget {
+  final DashboardSummary summary;
+  final TextStyle? style;
+
+  const _Amount({required this.summary, required this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final code = Get.find<SettingsController>().defaultCurrency?.code ?? '';
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: Text(
+          '${Formatters.amount(summary.totalSales)} $code',
+          maxLines: 1,
+          style: style,
+        ),
+      );
+    });
   }
 }
 
